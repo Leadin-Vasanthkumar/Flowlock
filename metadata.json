@@ -1,0 +1,5 @@
+{
+  "name": "Flow Timer",
+  "description": "A minimal, futuristic flow-state timer that tracks time spent on tasks with a breathing visual aesthetic.",
+  "requestFramePermissions": []
+}
