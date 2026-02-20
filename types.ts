@@ -4,8 +4,9 @@ export interface Task {
   title: string;
   completed: boolean;
   timeSpent: number; // in seconds
+  estimatedSeconds: number; // countdown duration
+  location?: string;
+  purpose?: string;
 }
 
 export type TimerStatus = 'idle' | 'running' | 'paused';
-export type TimerMode = 'flow' | 'pomodoro';
-export type PomodoroState = 'work' | 'break';

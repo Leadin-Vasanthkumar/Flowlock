@@ -1,24 +1,21 @@
-
 import React, { useState, useEffect, useRef } from 'react';
+import TaskDashboard from './TaskDashboard';
 import TimerView from './TimerView';
-import TodoView from './TodoView';
-import { Task, TimerStatus, TimerMode, PomodoroState } from '../types';
+import UserProfileMenu from './UserProfileMenu';
+import { GoalData } from './GoalsPanel';
+import { Task, TimerStatus } from '../types';
 import { supabase } from '../lib/supabase';
 
-const POMODORO_WORK_SECONDS = 25 * 60;
-const POMODORO_BREAK_SECONDS = 5 * 60;
-
-type ViewType = 'timer' | 'todo';
+type ViewType = 'dashboard' | 'timer';
 
 const Dashboard: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
     const [timerStatus, setTimerStatus] = useState<TimerStatus>('idle');
-    const [timerMode, setTimerMode] = useState<TimerMode>('flow');
-    const [pomodoroState, setPomodoroState] = useState<PomodoroState>('work');
     const [seconds, setSeconds] = useState(0);
-    const [currentView, setCurrentView] = useState<ViewType>('timer');
+    const [currentView, setCurrentView] = useState<ViewType>('dashboard');
     const [loading, setLoading] = useState(true);
+    const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', yearImage: undefined, monthImage: undefined, weekImage: undefined });
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const audioCtx = useRef<AudioContext | null>(null);
@@ -26,6 +23,7 @@ const Dashboard: React.FC = () => {
     // Fetch initial data
     useEffect(() => {
         fetchTasks();
+        fetchGoals();
     }, []);
 
     const fetchTasks = async () => {
@@ -46,7 +44,10 @@ const Dashboard: React.FC = () => {
                     id: t.id,
                     title: t.task,
                     completed: t.is_completed,
-                    timeSpent: t.time_spent || 0
+                    timeSpent: t.time_spent || 0,
+                    estimatedSeconds: t.estimated_seconds || 3600,
+                    location: t.location || undefined,
+                    purpose: t.purpose || undefined,
                 }));
                 setTasks(mappedTasks);
             }
@@ -57,22 +58,98 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const createTask = async (title: string) => {
+    const fetchGoals = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data, error } = await supabase
+                .from('goals')
+                .select('goal_type, content, image_url')
+                .eq('user_id', user.id);
+            if (error) throw error;
+            if (data) {
+                const g: GoalData = { year: '', month: '', week: '' };
+                data.forEach(row => {
+                    if (row.goal_type === 'year') { g.year = row.content || ''; g.yearImage = row.image_url || undefined; }
+                    if (row.goal_type === 'month') { g.month = row.content || ''; g.monthImage = row.image_url || undefined; }
+                    if (row.goal_type === 'week') { g.week = row.content || ''; g.weekImage = row.image_url || undefined; }
+                });
+                setGoals(g);
+            }
+        } catch (error) {
+            console.error('Error fetching goals:', error);
+        }
+    };
+
+    const handleSaveGoal = async (type: 'year' | 'month' | 'week', content: string) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { error } = await supabase
+                .from('goals')
+                .upsert({
+                    user_id: user.id,
+                    goal_type: type,
+                    content,
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'user_id,goal_type' });
+            if (error) throw error;
+            setGoals(prev => ({ ...prev, [type]: content }));
+        } catch (error) {
+            console.error('Error saving goal:', error);
+        }
+    };
+
+    const handleSaveGoalImage = async (type: 'year' | 'month' | 'week', imageUrl: string | null) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { error } = await supabase
+                .from('goals')
+                .upsert({
+                    user_id: user.id,
+                    goal_type: type,
+                    image_url: imageUrl,
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'user_id,goal_type' });
+            if (error) throw error;
+            const imageKey = `${type}Image` as 'yearImage' | 'monthImage' | 'weekImage';
+            setGoals(prev => ({ ...prev, [imageKey]: imageUrl || undefined }));
+        } catch (error) {
+            console.error('Error saving goal image:', error);
+        }
+    };
+
+    const createTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            const { data, error } = await supabase
+            const { data: row, error } = await supabase
                 .from('todos')
-                .insert({ user_id: user.id, task: title })
+                .insert({
+                    user_id: user.id,
+                    task: data.title,
+                    estimated_seconds: data.estimatedSeconds,
+                    location: data.location || null,
+                    purpose: data.purpose || null,
+                })
                 .select()
                 .single();
 
             if (error) throw error;
-            return data ? { id: data.id, title: data.task, completed: data.is_completed, timeSpent: 0 } : null;
+            return row ? {
+                id: row.id,
+                title: row.task,
+                completed: row.is_completed,
+                timeSpent: 0,
+                estimatedSeconds: row.estimated_seconds || 3600,
+                location: row.location || undefined,
+                purpose: row.purpose || undefined,
+            } as Task : null;
         } catch (error) {
             console.error('Error creating task:', error);
-            alert('Failed to create task. Please try again.'); // Minimal feedback
+            alert('Failed to create task.');
             return null;
         }
     };
@@ -81,11 +158,7 @@ const Dashboard: React.FC = () => {
         try {
             const updates: any = { is_completed };
             if (time_spent !== undefined) updates.time_spent = time_spent;
-
-            const { error } = await supabase
-                .from('todos')
-                .update(updates)
-                .eq('id', id);
+            const { error } = await supabase.from('todos').update(updates).eq('id', id);
             if (error) throw error;
         } catch (error) {
             console.error('Error updating task:', error);
@@ -96,19 +169,14 @@ const Dashboard: React.FC = () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-
             const durationMinutes = Math.floor(durationSeconds / 60);
-            if (durationMinutes < 1) return; // Don't log sessions shorter than 1 minute
-
-            const { error } = await supabase
-                .from('focus_sessions')
-                .insert({
-                    user_id: user.id,
-                    duration_minutes: durationMinutes,
-                    status: 'completed',
-                    end_time: new Date().toISOString()
-                });
-
+            if (durationMinutes < 1) return;
+            const { error } = await supabase.from('focus_sessions').insert({
+                user_id: user.id,
+                duration_minutes: durationMinutes,
+                status: 'completed',
+                end_time: new Date().toISOString()
+            });
             if (error) throw error;
         } catch (error) {
             console.error('Error logging focus session:', error);
@@ -117,24 +185,35 @@ const Dashboard: React.FC = () => {
 
     const removeTask = async (id: string) => {
         try {
-            const { error } = await supabase
-                .from('todos')
-                .delete()
-                .eq('id', id);
+            const { error } = await supabase.from('todos').delete().eq('id', id);
             if (error) throw error;
         } catch (error) {
             console.error("Error deleting task:", error);
         }
-    }
+    };
 
+    const handleFinishDay = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { error } = await supabase.from('todos').delete().eq('user_id', user.id);
+            if (error) throw error;
+            setTasks([]);
+            setActiveTaskId(null);
+            setTimerStatus('idle');
+            setSeconds(0);
+            if (currentView === 'timer') setCurrentView('dashboard');
+        } catch (error) {
+            console.error('Error finishing day:', error);
+        }
+    };
 
-    // Simple "Ting Dong" sound using Oscillator
+    // Notification sound
     const playNotification = () => {
         if (!audioCtx.current) {
             audioCtx.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         }
         const ctx = audioCtx.current;
-
         const playTone = (freq: number, start: number, duration: number) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -147,131 +226,137 @@ const Dashboard: React.FC = () => {
             osc.start(start);
             osc.stop(start + duration);
         };
-
         const now = ctx.currentTime;
-        playTone(880, now, 0.5); // Ting
-        playTone(660, now + 0.25, 0.5); // Dong
+        playTone(880, now, 0.5);
+        playTone(660, now + 0.25, 0.5);
+    };
+
+    // Play a task — start countdown
+    const handlePlayTask = (id: string) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task || task.completed) return;
+        setActiveTaskId(id);
+        setSeconds(task.estimatedSeconds);
+        setTimerStatus('running');
+        setCurrentView('timer');
     };
 
     const handleToggleTimer = () => {
-        if (!activeTaskId && timerMode === 'flow') return;
-        if (timerStatus === 'running') {
-            setTimerStatus('paused');
-        } else {
-            setTimerStatus('running');
-        }
+        if (!activeTaskId) return;
+        setTimerStatus(prev => prev === 'running' ? 'paused' : 'running');
     };
 
     const handleMarkDone = async () => {
-        if (activeTaskId) {
-            const task = tasks.find(t => t.id === activeTaskId);
-            const additionalTime = timerMode === 'flow' ? seconds : 0; // Pomodoro usually has fixed time, but we'll stick to flow for now or handle both
-            const newTotalTime = (task?.timeSpent || 0) + additionalTime;
+        if (!activeTaskId) return;
+        const task = tasks.find(t => t.id === activeTaskId);
+        if (!task) return;
 
-            // Optimistic update
-            setTasks(prev => prev.map(t =>
-                t.id === activeTaskId
-                    ? { ...t, completed: true, timeSpent: newTotalTime }
-                    : t
-            ));
+        const elapsed = task.estimatedSeconds - seconds;
+        const newTotalTime = (task.timeSpent || 0) + elapsed;
 
-            await updateTaskStatus(activeTaskId, true, newTotalTime);
-            await logFocusSession(additionalTime);
+        setTasks(prev => prev.map(t =>
+            t.id === activeTaskId ? { ...t, completed: true, timeSpent: newTotalTime } : t
+        ));
 
-            setTimerStatus('idle');
-            setSeconds(timerMode === 'pomodoro' ? POMODORO_WORK_SECONDS : 0);
-            setActiveTaskId(null);
-        }
+        await updateTaskStatus(activeTaskId, true, newTotalTime);
+        await logFocusSession(elapsed);
+
+        setTimerStatus('idle');
+        setSeconds(0);
+        setActiveTaskId(null);
+        setCurrentView('dashboard');
     };
 
-    const handleAddTask = async (title: string) => {
-        // Optimistic update? Or wait for DB? Let's wait for DB for ID.
-        const newTask = await createTask(title);
+    const handleAddTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => {
+        const newTask = await createTask(data);
         if (!newTask) return;
-
         setTasks(prev => [...prev, newTask]);
-        if (!activeTaskId) {
-            setActiveTaskId(newTask.id);
-            if (timerMode === 'pomodoro') {
-                setSeconds(POMODORO_WORK_SECONDS);
-                setPomodoroState('work');
-            } else {
-                setSeconds(0);
-            }
-            setTimerStatus('running');
+    };
+
+    const handleEditTask = async (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => {
+        try {
+            const { error } = await supabase.from('todos').update({
+                task: data.title,
+                estimated_seconds: data.estimatedSeconds,
+                location: data.location || null,
+                purpose: data.purpose || null,
+            }).eq('id', id);
+            if (error) throw error;
+            setTasks(prev => prev.map(t => t.id === id ? {
+                ...t,
+                title: data.title,
+                estimatedSeconds: data.estimatedSeconds,
+                location: data.location,
+                purpose: data.purpose,
+            } : t));
+        } catch (error) {
+            console.error('Error editing task:', error);
+            alert('Failed to save changes.');
         }
     };
 
     const handleDeleteTask = async (id: string) => {
         setTasks(prev => prev.filter(t => t.id !== id));
         await removeTask(id);
-
         if (activeTaskId === id) {
             setTimerStatus('idle');
-            setSeconds(timerMode === 'pomodoro' ? POMODORO_WORK_SECONDS : 0);
+            setSeconds(0);
             setActiveTaskId(null);
-        }
-    };
-
-    const handleModeChange = (mode: TimerMode) => {
-        setTimerMode(mode);
-        setTimerStatus('idle');
-        setPomodoroState('work');
-        setSeconds(mode === 'pomodoro' ? POMODORO_WORK_SECONDS : 0);
-    };
-
-    const handleSelectTask = (id: string) => {
-        if (activeTaskId !== id) {
-            setActiveTaskId(id);
-            if (timerMode === 'pomodoro') {
-                setSeconds(POMODORO_WORK_SECONDS);
-                setPomodoroState('work');
-            } else {
-                setSeconds(0);
-            }
-            setTimerStatus('running');
+            if (currentView === 'timer') setCurrentView('dashboard');
         }
     };
 
     const handleToggleComplete = async (id: string) => {
         const task = tasks.find(t => t.id === id);
         if (!task) return;
-
         setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
         await updateTaskStatus(id, !task.completed);
-
         if (activeTaskId === id) {
             setTimerStatus('idle');
-            setSeconds(timerMode === 'pomodoro' ? POMODORO_WORK_SECONDS : 0);
+            setSeconds(0);
             setActiveTaskId(null);
         }
     };
 
     const handleReset = () => {
+        if (!activeTaskId) return;
+        const task = tasks.find(t => t.id === activeTaskId);
+        if (!task) return;
         setTimerStatus('idle');
-        if (timerMode === 'flow') {
-            setSeconds(0);
-        } else {
-            setSeconds(pomodoroState === 'work' ? POMODORO_WORK_SECONDS : POMODORO_BREAK_SECONDS);
-        }
+        setSeconds(task.estimatedSeconds);
     };
 
+    const handleBackToDashboard = () => {
+        setTimerStatus('idle');
+        setSeconds(0);
+        setActiveTaskId(null);
+        setCurrentView('dashboard');
+    };
+
+    // Countdown timer effect
     useEffect(() => {
         if (timerStatus === 'running') {
             timerRef.current = setInterval(() => {
                 setSeconds(s => {
-                    if (timerMode === 'flow') return s + 1;
-
                     if (s <= 1) {
-                        // Transition Pomodoro State
+                        // Timer finished
                         playNotification();
-                        if (pomodoroState === 'work') {
-                            setPomodoroState('break');
-                            return POMODORO_BREAK_SECONDS;
-                        } else {
-                            setPomodoroState('work');
-                            return POMODORO_WORK_SECONDS;
+                        setTimerStatus('idle');
+                        // Auto-complete the task
+                        if (activeTaskId) {
+                            const task = tasks.find(t => t.id === activeTaskId);
+                            if (task) {
+                                const newTotalTime = (task.timeSpent || 0) + task.estimatedSeconds;
+                                setTasks(prev => prev.map(t =>
+                                    t.id === activeTaskId ? { ...t, completed: true, timeSpent: newTotalTime } : t
+                                ));
+                                updateTaskStatus(activeTaskId, true, newTotalTime);
+                                logFocusSession(task.estimatedSeconds);
+                            }
+                            setActiveTaskId(null);
+                            setCurrentView('dashboard');
                         }
+                        return 0;
                     }
                     return s - 1;
                 });
@@ -283,69 +368,44 @@ const Dashboard: React.FC = () => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [timerStatus, timerMode, pomodoroState]);
+    }, [timerStatus, activeTaskId, tasks]);
 
     return (
-        <div className="relative h-screen w-full bg-[#0d071a] text-white overflow-hidden select-none">
+        <div className="relative h-screen w-full bg-[#0d0814] text-white overflow-hidden select-none">
 
-            {/* Sign Out Button */}
+            {/* User Profile Menu */}
             <div className="absolute top-4 right-4 z-50">
-                <button
-                    onClick={() => supabase.auth.signOut()}
-                    className="text-white/40 hover:text-white transition-colors text-sm"
-                >
-                    Sign Out
-                </button>
+                <UserProfileMenu />
             </div>
 
             {/* View Rendering */}
             {currentView === 'timer' ? (
                 <TimerView
-                    timerMode={timerMode}
                     timerStatus={timerStatus}
-                    pomodoroState={pomodoroState}
                     seconds={seconds}
                     activeTaskId={activeTaskId}
                     tasks={tasks}
                     onToggleTimer={handleToggleTimer}
                     onMarkDone={handleMarkDone}
-                    onSelectTask={handleSelectTask}
-                    onAddTask={handleAddTask}
-                    onDeleteTask={handleDeleteTask}
-                    onToggleComplete={handleToggleComplete}
-                    onModeChange={handleModeChange}
                     onReset={handleReset}
+                    onBack={handleBackToDashboard}
                 />
             ) : (
-                <TodoView
+                <TaskDashboard
                     tasks={tasks}
                     activeTaskId={activeTaskId}
-                    onSelectTask={handleSelectTask}
+                    onPlayTask={handlePlayTask}
                     onAddTask={handleAddTask}
+                    onEditTask={handleEditTask}
                     onDeleteTask={handleDeleteTask}
                     onToggleComplete={handleToggleComplete}
+                    loading={loading}
+                    goals={goals}
+                    onSaveGoal={handleSaveGoal}
+                    onSaveGoalImage={handleSaveGoalImage}
+                    onFinishDay={handleFinishDay}
                 />
             )}
-
-            {/* Navigation Button - Bottom Right */}
-            <div className="absolute bottom-12 right-12 z-50">
-                <button
-                    onClick={() => setCurrentView(prev => prev === 'timer' ? 'todo' : 'timer')}
-                    className="group flex items-center justify-center w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300"
-                    title={currentView === 'timer' ? "View To-Do List" : "Back to Timer"}
-                >
-                    {currentView === 'timer' ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white/60 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                        </svg>
-                    ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white/60 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    )}
-                </button>
-            </div>
-
         </div>
     );
 };
