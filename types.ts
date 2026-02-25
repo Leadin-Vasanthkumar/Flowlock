@@ -7,6 +7,9 @@ export interface Task {
   estimatedSeconds: number; // countdown duration
   location?: string;
   purpose?: string;
+  scheduledAt?: string; // ISO timestamp for when to start this task
+  habitId?: string;
 }
 
 export type TimerStatus = 'idle' | 'running' | 'paused';
+

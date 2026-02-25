@@ -9,14 +9,14 @@ interface TaskDashboardProps {
     tasks: Task[];
     activeTaskId: string | null;
     onPlayTask: (id: string) => void;
-    onAddTask: (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => Promise<void>;
-    onEditTask: (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => Promise<void>;
+    onAddTask: (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; }) => Promise<void>;
+    onEditTask: (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string }) => Promise<void>;
     onDeleteTask: (id: string) => void;
     onToggleComplete: (id: string) => void;
     loading?: boolean;
     goals: GoalData;
-    onSaveGoal: (type: 'year' | 'month' | 'week', content: string) => Promise<void>;
-    onSaveGoalImage: (type: 'year' | 'month' | 'week', imageUrl: string | null) => Promise<void>;
+    onSaveGoal: (type: 'year' | 'month' | 'week' | 'day', content: string) => Promise<void>;
+    onSaveGoalImage: (type: 'year' | 'month' | 'week' | 'day', imageUrl: string | null) => Promise<void>;
     onFinishDay: () => Promise<void>;
 }
 
@@ -26,6 +26,25 @@ const formatDuration = (totalSeconds: number): string => {
     if (h > 0 && m > 0) return `${h}h ${m}m`;
     if (h > 0) return `${h}h`;
     return `${m}m`;
+};
+
+const formatScheduledTime = (isoString: string): string => {
+    const d = new Date(isoString);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomorrow = d.toDateString() === tomorrow.toDateString();
+
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const period = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const timeStr = `${h}:${m.toString().padStart(2, '0')} ${period}`;
+
+    if (isToday) return `Today ${timeStr}`;
+    if (isTomorrow) return `Tomorrow ${timeStr}`;
+    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${timeStr}`;
 };
 
 const TaskDashboard: React.FC<TaskDashboardProps> = ({
@@ -46,11 +65,12 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
     const [creating, setCreating] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [showMobileGoals, setShowMobileGoals] = useState(false);
 
     const pendingTasks = tasks.filter(t => !t.completed);
     const completedTasks = tasks.filter(t => t.completed);
 
-    const handleAdd = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => {
+    const handleAdd = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; }) => {
         setCreating(true);
         await onAddTask(data);
         setCreating(false);
@@ -65,7 +85,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
         <div className="relative h-full w-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
 
             {/* Left Column: Tasks */}
-            <div className="flex flex-col px-6 md:px-12 pt-8 pb-12 overflow-y-auto">
+            <div className="flex flex-col px-4 sm:px-6 md:px-12 pt-6 sm:pt-8 pb-8 sm:pb-12 overflow-y-auto">
 
                 {/* Header */}
                 <div className="mb-10">
@@ -180,6 +200,15 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                         </svg>
                                                         {formatDuration(task.estimatedSeconds)}
                                                     </span>
+                                                    {/* Habit tag */}
+                                                    {task.habitId && (
+                                                        <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: '#ec4899' }}>
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                            </svg>
+                                                            Habit
+                                                        </span>
+                                                    )}
                                                     {/* Location tag */}
                                                     {task.location && (
                                                         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
@@ -188,6 +217,15 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                                                             </svg>
                                                             {task.location}
+                                                        </span>
+                                                    )}
+                                                    {/* Scheduled time tag */}
+                                                    {task.scheduledAt && (
+                                                        <span className="inline-flex items-center gap-1 text-xs" style={{ color: '#a855f7' }}>
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                                                            </svg>
+                                                            {formatScheduledTime(task.scheduledAt)}
                                                         </span>
                                                     )}
                                                 </div>
@@ -202,7 +240,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                 {/* Edit */}
                                                 <button
                                                     onClick={() => setEditingTaskId(task.id)}
-                                                    className="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-[#a855f7] transition-all cursor-pointer"
+                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-slate-600 hover:text-[#a855f7] transition-all cursor-pointer"
                                                     title="Edit task"
                                                     aria-label="Edit task"
                                                 >
@@ -213,7 +251,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                 {/* Delete */}
                                                 <button
                                                     onClick={() => onDeleteTask(task.id)}
-                                                    className="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-red-400 transition-all cursor-pointer"
+                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-slate-600 hover:text-red-400 transition-all cursor-pointer"
                                                     title="Delete task"
                                                     aria-label="Delete task"
                                                 >
@@ -313,10 +351,65 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                 )}
             </div>
 
-            {/* Right Column: Goals */}
+            {/* Right Column: Goals (Desktop) */}
             <div className="hidden lg:block border-l overflow-y-auto" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                 <GoalsPanel goals={goals} onSaveGoal={onSaveGoal} onSaveGoalImage={onSaveGoalImage} />
             </div>
+
+            {/* Mobile Goals FAB */}
+            <button
+                onClick={() => setShowMobileGoals(true)}
+                className="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-transform cursor-pointer"
+                style={{
+                    background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
+                    boxShadow: '0 8px 32px -4px rgba(127,25,230,0.5)',
+                }}
+                aria-label="View Goals"
+                title="Goals"
+            >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="6" />
+                    <circle cx="12" cy="12" r="2" />
+                </svg>
+            </button>
+
+            {/* Mobile Goals Overlay */}
+            {showMobileGoals && (
+                <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowMobileGoals(false)}
+                    />
+                    {/* Panel */}
+                    <div
+                        className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-3xl"
+                        style={{
+                            background: '#0d0814',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderBottom: 'none',
+                        }}
+                    >
+                        {/* Handle bar */}
+                        <div className="flex justify-center pt-3 pb-1">
+                            <div className="w-10 h-1 rounded-full bg-white/15" />
+                        </div>
+                        {/* Close button */}
+                        <button
+                            onClick={() => setShowMobileGoals(false)}
+                            className="absolute top-4 right-4 p-2 text-white/40 hover:text-white transition-colors cursor-pointer"
+                            aria-label="Close Goals"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                        <GoalsPanel goals={goals} onSaveGoal={onSaveGoal} onSaveGoalImage={onSaveGoalImage} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

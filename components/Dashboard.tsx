@@ -15,9 +15,11 @@ const Dashboard: React.FC = () => {
     const [seconds, setSeconds] = useState(0);
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
     const [loading, setLoading] = useState(true);
-    const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', yearImage: undefined, monthImage: undefined, weekImage: undefined });
+    const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', day: '', yearImage: undefined, monthImage: undefined, weekImage: undefined, dayImage: undefined });
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const endTimeRef = useRef<number>(0);
+    const rafRef = useRef<number | null>(null);
     const audioCtx = useRef<AudioContext | null>(null);
 
     // Fetch initial data
@@ -30,6 +32,54 @@ const Dashboard: React.FC = () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
+
+            // --- HABIT AUTOGENERATION LOGIC ---
+            const today = new Date();
+            const todayDateStr = today.toISOString().split('T')[0];
+            const currentDayOfWeek = today.getDay();
+
+            // Get habits
+            const { data: habitsData } = await supabase
+                .from('habits')
+                .select('*')
+                .eq('user_id', user.id);
+
+            if (habitsData && habitsData.length > 0) {
+                const habitsToGenerate = habitsData.filter(h => {
+                    // Check if generated today
+                    if (h.last_generated_date === todayDateStr) return false;
+                    // Check if it should repeat today
+                    if (h.repeat_type === 'daily') return true;
+                    if (h.repeat_type === 'weekly' && h.repeat_day_of_week === currentDayOfWeek) return true;
+                    return false;
+                });
+
+                if (habitsToGenerate.length > 0) {
+                    const todosToInsert = habitsToGenerate.map(h => {
+                        let newScheduledAt = null;
+                        if (h.scheduled_time) {
+                            newScheduledAt = `${todayDateStr}T${h.scheduled_time}Z`;
+                        }
+                        return {
+                            user_id: user.id,
+                            task: h.title,
+                            estimated_seconds: h.estimated_seconds,
+                            location: h.location,
+                            purpose: h.purpose,
+                            scheduled_at: newScheduledAt,
+                            habit_id: h.id,
+                        };
+                    });
+
+                    await supabase.from('todos').insert(todosToInsert);
+
+                    // Update habits last_generated_date
+                    await supabase.from('habits')
+                        .update({ last_generated_date: todayDateStr })
+                        .in('id', habitsToGenerate.map(h => h.id));
+                }
+            }
+            // --- END HABIT AUTOGENERATION ---
 
             const { data, error } = await supabase
                 .from('todos')
@@ -48,6 +98,8 @@ const Dashboard: React.FC = () => {
                     estimatedSeconds: t.estimated_seconds || 3600,
                     location: t.location || undefined,
                     purpose: t.purpose || undefined,
+                    scheduledAt: t.scheduled_at || undefined,
+                    habitId: t.habit_id || undefined,
                 }));
                 setTasks(mappedTasks);
             }
@@ -68,11 +120,12 @@ const Dashboard: React.FC = () => {
                 .eq('user_id', user.id);
             if (error) throw error;
             if (data) {
-                const g: GoalData = { year: '', month: '', week: '' };
+                const g: GoalData = { year: '', month: '', week: '', day: '' };
                 data.forEach(row => {
                     if (row.goal_type === 'year') { g.year = row.content || ''; g.yearImage = row.image_url || undefined; }
                     if (row.goal_type === 'month') { g.month = row.content || ''; g.monthImage = row.image_url || undefined; }
                     if (row.goal_type === 'week') { g.week = row.content || ''; g.weekImage = row.image_url || undefined; }
+                    if (row.goal_type === 'day') { g.day = row.content || ''; g.dayImage = row.image_url || undefined; }
                 });
                 setGoals(g);
             }
@@ -81,7 +134,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleSaveGoal = async (type: 'year' | 'month' | 'week', content: string) => {
+    const handleSaveGoal = async (type: 'year' | 'month' | 'week' | 'day', content: string) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
@@ -100,7 +153,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleSaveGoalImage = async (type: 'year' | 'month' | 'week', imageUrl: string | null) => {
+    const handleSaveGoalImage = async (type: 'year' | 'month' | 'week' | 'day', imageUrl: string | null) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
@@ -113,17 +166,43 @@ const Dashboard: React.FC = () => {
                     updated_at: new Date().toISOString(),
                 }, { onConflict: 'user_id,goal_type' });
             if (error) throw error;
-            const imageKey = `${type}Image` as 'yearImage' | 'monthImage' | 'weekImage';
+            const imageKey = `${type}Image` as 'yearImage' | 'monthImage' | 'weekImage' | 'dayImage';
             setGoals(prev => ({ ...prev, [imageKey]: imageUrl || undefined }));
         } catch (error) {
             console.error('Error saving goal image:', error);
         }
     };
 
-    const createTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => {
+    const createTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
+
+            let habitId = null;
+
+            if (data.repeatType && data.repeatType !== 'none') {
+                const { data: habitRow, error: habitError } = await supabase
+                    .from('habits')
+                    .insert({
+                        user_id: user.id,
+                        title: data.title,
+                        estimated_seconds: data.estimatedSeconds,
+                        location: data.location || null,
+                        purpose: data.purpose || null,
+                        scheduled_time: data.scheduledAt ? new Date(data.scheduledAt).toISOString().split('T')[1] : null,
+                        repeat_type: data.repeatType,
+                        repeat_day_of_week: data.repeatDayOfWeek,
+                        last_generated_date: new Date().toISOString().split('T')[0],
+                    })
+                    .select()
+                    .single();
+
+                if (habitError) {
+                    console.error('Error creating habit:', habitError);
+                } else {
+                    habitId = habitRow.id;
+                }
+            }
 
             const { data: row, error } = await supabase
                 .from('todos')
@@ -133,6 +212,8 @@ const Dashboard: React.FC = () => {
                     estimated_seconds: data.estimatedSeconds,
                     location: data.location || null,
                     purpose: data.purpose || null,
+                    scheduled_at: data.scheduledAt || null,
+                    habit_id: habitId,
                 })
                 .select()
                 .single();
@@ -146,6 +227,8 @@ const Dashboard: React.FC = () => {
                 estimatedSeconds: row.estimated_seconds || 3600,
                 location: row.location || undefined,
                 purpose: row.purpose || undefined,
+                scheduledAt: row.scheduled_at || undefined,
+                habitId: row.habit_id || undefined,
             } as Task : null;
         } catch (error) {
             console.error('Error creating task:', error);
@@ -267,19 +350,20 @@ const Dashboard: React.FC = () => {
         setCurrentView('dashboard');
     };
 
-    const handleAddTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => {
+    const handleAddTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number }) => {
         const newTask = await createTask(data);
         if (!newTask) return;
         setTasks(prev => [...prev, newTask]);
     };
 
-    const handleEditTask = async (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string }) => {
+    const handleEditTask = async (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string }) => {
         try {
             const { error } = await supabase.from('todos').update({
                 task: data.title,
                 estimated_seconds: data.estimatedSeconds,
                 location: data.location || null,
                 purpose: data.purpose || null,
+                scheduled_at: data.scheduledAt || null,
             }).eq('id', id);
             if (error) throw error;
             setTasks(prev => prev.map(t => t.id === id ? {
@@ -288,6 +372,7 @@ const Dashboard: React.FC = () => {
                 estimatedSeconds: data.estimatedSeconds,
                 location: data.location,
                 purpose: data.purpose,
+                scheduledAt: data.scheduledAt,
             } : t));
         } catch (error) {
             console.error('Error editing task:', error);
@@ -333,48 +418,76 @@ const Dashboard: React.FC = () => {
         setCurrentView('dashboard');
     };
 
-    // Countdown timer effect
+    // Wall-clock based countdown timer
+    // Instead of relying on setInterval ticks (which Chrome throttles in
+    // background tabs), we store the real end-time and always compute
+    // remaining = endTime - Date.now(). This keeps the timer accurate even
+    // when the browser throttles intervals.
     useEffect(() => {
         if (timerStatus === 'running') {
-            timerRef.current = setInterval(() => {
-                setSeconds(s => {
-                    if (s <= 1) {
-                        // Timer finished
-                        playNotification();
-                        setTimerStatus('idle');
-                        // Auto-complete the task
-                        if (activeTaskId) {
-                            const task = tasks.find(t => t.id === activeTaskId);
-                            if (task) {
-                                const newTotalTime = (task.timeSpent || 0) + task.estimatedSeconds;
-                                setTasks(prev => prev.map(t =>
-                                    t.id === activeTaskId ? { ...t, completed: true, timeSpent: newTotalTime } : t
-                                ));
-                                updateTaskStatus(activeTaskId, true, newTotalTime);
-                                logFocusSession(task.estimatedSeconds);
-                            }
-                            setActiveTaskId(null);
-                            setCurrentView('dashboard');
-                        }
-                        return 0;
+            // Capture the wall-clock end time from current remaining seconds
+            endTimeRef.current = Date.now() + seconds * 1000;
+
+            const onTimerFinished = () => {
+                playNotification();
+                setTimerStatus('idle');
+                setSeconds(0);
+                if (activeTaskId) {
+                    const task = tasks.find(t => t.id === activeTaskId);
+                    if (task) {
+                        const newTotalTime = (task.timeSpent || 0) + task.estimatedSeconds;
+                        setTasks(prev => prev.map(t =>
+                            t.id === activeTaskId ? { ...t, completed: true, timeSpent: newTotalTime } : t
+                        ));
+                        updateTaskStatus(activeTaskId, true, newTotalTime);
+                        logFocusSession(task.estimatedSeconds);
                     }
-                    return s - 1;
-                });
-            }, 1000);
+                    setActiveTaskId(null);
+                    setCurrentView('dashboard');
+                }
+            };
+
+            const tick = () => {
+                const remaining = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+                if (remaining <= 0) {
+                    onTimerFinished();
+                } else {
+                    setSeconds(remaining);
+                }
+            };
+
+            // Use a fast interval (250ms) — each tick is cheap since it just
+            // reads Date.now(). Even if Chrome throttles this to once/sec in
+            // the background, the computed remaining time is always correct.
+            timerRef.current = setInterval(tick, 250);
+
+            // Instantly catch up when the user returns to this tab
+            const handleVisibility = () => {
+                if (document.visibilityState === 'visible') {
+                    tick();
+                }
+            };
+            document.addEventListener('visibilitychange', handleVisibility);
+
+            return () => {
+                if (timerRef.current) clearInterval(timerRef.current);
+                if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                document.removeEventListener('visibilitychange', handleVisibility);
+            };
         } else {
             if (timerRef.current) clearInterval(timerRef.current);
+            return undefined;
         }
-
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
+        // Note: we intentionally only re-run this effect when timerStatus changes.
+        // We do NOT include `seconds` because that would reset endTimeRef on every tick.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [timerStatus, activeTaskId, tasks]);
 
     return (
         <div className="relative h-screen w-full bg-[#0d0814] text-white overflow-hidden select-none">
 
             {/* User Profile Menu */}
-            <div className="absolute top-4 right-4 z-50">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50">
                 <UserProfileMenu />
             </div>
 

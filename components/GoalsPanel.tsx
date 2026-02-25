@@ -5,19 +5,21 @@ export interface GoalData {
     year: string;
     month: string;
     week: string;
+    day: string;
     yearImage?: string;
     monthImage?: string;
     weekImage?: string;
+    dayImage?: string;
 }
 
 interface GoalsPanelProps {
     goals: GoalData;
-    onSaveGoal: (type: 'year' | 'month' | 'week', content: string) => Promise<void>;
-    onSaveGoalImage: (type: 'year' | 'month' | 'week', imageUrl: string | null) => Promise<void>;
+    onSaveGoal: (type: 'year' | 'month' | 'week' | 'day', content: string) => Promise<void>;
+    onSaveGoalImage: (type: 'year' | 'month' | 'week' | 'day', imageUrl: string | null) => Promise<void>;
 }
 
 interface GoalCardProps {
-    type: 'year' | 'month' | 'week';
+    type: 'year' | 'month' | 'week' | 'day';
     label: string;
     sublabel: string;
     placeholder: string;
@@ -293,7 +295,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ type, label, sublabel, placeholder,
 };
 
 const GoalsPanel: React.FC<GoalsPanelProps> = ({ goals, onSaveGoal, onSaveGoalImage }) => {
-    const handleImageUpload = async (type: 'year' | 'month' | 'week', file: File) => {
+    const handleImageUpload = async (type: 'year' | 'month' | 'week' | 'day', file: File) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
@@ -318,17 +320,36 @@ const GoalsPanel: React.FC<GoalsPanelProps> = ({ goals, onSaveGoal, onSaveGoalIm
         }
     };
 
-    const handleImageRemove = async (type: 'year' | 'month' | 'week') => {
+    const handleImageRemove = async (type: 'year' | 'month' | 'week' | 'day') => {
         await onSaveGoalImage(type, null);
     };
 
     return (
-        <div className="flex flex-col gap-3 h-full pt-8 pb-12 px-6 md:px-8">
+        <div className="flex flex-col gap-3 h-full pt-6 sm:pt-8 pb-8 sm:pb-12 px-4 sm:px-6 md:px-8">
             {/* Section title */}
             <div className="mb-1">
                 <h2 className="text-lg font-bold text-white tracking-tight">Goals</h2>
                 <p className="text-xs text-slate-500 mt-1">Stay aligned with your vision</p>
             </div>
+
+            {/* Daily Non-Negotiable — featured at the top */}
+            <GoalCard
+                type="day"
+                label="Today's Non-Negotiable"
+                sublabel="The ONE thing you must complete today"
+                placeholder="What is the one thing that will move you forward today?"
+                value={goals.day}
+                imageUrl={goals.dayImage}
+                onSave={(content) => onSaveGoal('day', content)}
+                onImageUpload={(file) => handleImageUpload('day', file)}
+                onImageRemove={() => handleImageRemove('day')}
+                accentColor="#f59e0b"
+                icon={
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0117 10c0 3-2.5 5-5 8-2.5-3-5-5-5-8a5 5 0 011.5-3.5C9.5 5.5 11 5 12 2z" />
+                    </svg>
+                }
+            />
 
             <GoalCard
                 type="year"

@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flow Timer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Flowlock</title>
+    <link rel="icon" type="image/png" href="/logo.flowlock.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -15,8 +15,11 @@
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
-            overflow: hidden;
+            overflow: auto;
             background-color: #0d071a;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         @keyframes breathe {
@@ -101,15 +104,6 @@
             background: radial-gradient(circle at 50% -20%, rgba(127, 25, 230, 0.2) 0%, transparent 70%);
         }
     </style>
-    <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4"
-  }
-}
-</script>
     <link rel="stylesheet" href="/index.css">
 </head>
 

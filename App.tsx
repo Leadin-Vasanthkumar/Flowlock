@@ -5,6 +5,7 @@ import { supabase } from './lib/supabase';
 import AuthPage from './components/AuthPage';
 import SignUpPage from './components/SignUpPage';
 import Dashboard from './components/Dashboard';
+import LandingPage from './components/LandingPage';
 
 const App: React.FC = () => {
   const [session, setSession] = useState(null);
@@ -37,15 +38,19 @@ const App: React.FC = () => {
     <BrowserRouter>
       <Routes>
         <Route
+          path="/"
+          element={!session ? <LandingPage /> : <Navigate to="/app" replace />}
+        />
+        <Route
           path="/login"
-          element={!session ? <AuthPage /> : <Navigate to="/" replace />}
+          element={!session ? <AuthPage /> : <Navigate to="/app" replace />}
         />
         <Route
           path="/signup"
-          element={!session ? <SignUpPage /> : <Navigate to="/" replace />}
+          element={!session ? <SignUpPage /> : <Navigate to="/app" replace />}
         />
         <Route
-          path="/"
+          path="/app"
           element={session ? <Dashboard /> : <Navigate to="/login" replace />}
         />
       </Routes>
