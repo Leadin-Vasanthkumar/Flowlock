@@ -23,8 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Screenshots
-Screenshot*.png
+# Screenshots (root level only, not public/)
+/Screenshot*.png
 
 # Environment files
 .env*
