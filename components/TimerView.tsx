@@ -40,10 +40,14 @@ const TimerView: React.FC<TimerViewProps> = ({
     const progress = Math.max(0, Math.min(1, 1 - (seconds / totalEstimated)));
 
     return (
-        <div className="relative h-full w-full flex flex-col items-center justify-center">
+        <div className="relative h-full w-full flex flex-col items-center justify-center overflow-hidden">
+            {/* Background Gradient */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-purple-500/10 to-pink-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
 
             {/* Background Breathing Rings */}
-            <BreathingRings color="purple" />
+            <div className="absolute inset-0 z-10 pointer-events-none">
+                <BreathingRings color="purple" />
+            </div>
 
             {/* Back to Dashboard - Top Left */}
             <div className="absolute top-4 left-4 sm:top-6 sm:left-6 md:top-10 md:left-12 z-50">
@@ -67,15 +71,32 @@ const TimerView: React.FC<TimerViewProps> = ({
                     {activeTask && (
                         <div className={`transition-opacity duration-500 ${timerStatus === 'running' ? 'opacity-40' : 'opacity-60'}`}>
                             <p className="text-base sm:text-lg md:text-xl font-medium tracking-wide">{activeTask.title}</p>
-                            {activeTask.location && (
-                                <p className="text-sm text-slate-500 mt-1 flex items-center justify-center gap-1.5">
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                                    </svg>
-                                    {activeTask.location}
-                                </p>
-                            )}
+
+                            <div className="flex items-center justify-center gap-3 mt-1.5 text-sm text-slate-500">
+                                {activeTask.estimatedSeconds && (
+                                    <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 backdrop-blur-sm">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {Math.round(activeTask.estimatedSeconds / 60)} min
+                                    </span>
+                                )}
+
+                                {activeTask.location && (
+                                    <>
+                                        {activeTask.estimatedSeconds && (
+                                            <span className="w-1 h-1 rounded-full bg-slate-600"></span>
+                                        )}
+                                        <span className="flex items-center gap-1.5">
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                                            </svg>
+                                            {activeTask.location}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

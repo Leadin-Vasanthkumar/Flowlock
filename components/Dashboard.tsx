@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TaskDashboard from './TaskDashboard';
 import TimerView from './TimerView';
+import GuidedBreak, { BreakPhase, BreakActivity } from './GuidedBreak';
 import UserProfileMenu from './UserProfileMenu';
 import { GoalData } from './GoalsPanel';
 import { Task, TimerStatus } from '../types';
 import { supabase } from '../lib/supabase';
 
-type ViewType = 'dashboard' | 'timer';
+type ViewType = 'dashboard' | 'timer' | 'guided-break';
 
 const Dashboard: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -21,6 +22,13 @@ const Dashboard: React.FC = () => {
     const endTimeRef = useRef<number>(0);
     const rafRef = useRef<number | null>(null);
     const audioCtx = useRef<AudioContext | null>(null);
+    const generatingHabitsRef = useRef<boolean>(false);
+
+    // Guided break state
+    const [breakPhase, setBreakPhase] = useState<BreakPhase>('victory');
+    const [breakActivity, setBreakActivity] = useState<BreakActivity | null>(null);
+    const [breakSeconds, setBreakSeconds] = useState(300); // 5 minutes
+    const [completedTaskName, setCompletedTaskName] = useState('');
 
     // Fetch initial data
     useEffect(() => {
@@ -34,49 +42,56 @@ const Dashboard: React.FC = () => {
             if (!user) return;
 
             // --- HABIT AUTOGENERATION LOGIC ---
-            const today = new Date();
-            const todayDateStr = today.toISOString().split('T')[0];
-            const currentDayOfWeek = today.getDay();
+            if (!generatingHabitsRef.current) {
+                generatingHabitsRef.current = true;
+                try {
+                    const today = new Date();
+                    const todayDateStr = today.toISOString().split('T')[0];
+                    const currentDayOfWeek = today.getDay();
 
-            // Get habits
-            const { data: habitsData } = await supabase
-                .from('habits')
-                .select('*')
-                .eq('user_id', user.id);
+                    // Get habits
+                    const { data: habitsData } = await supabase
+                        .from('habits')
+                        .select('*')
+                        .eq('user_id', user.id);
 
-            if (habitsData && habitsData.length > 0) {
-                const habitsToGenerate = habitsData.filter(h => {
-                    // Check if generated today
-                    if (h.last_generated_date === todayDateStr) return false;
-                    // Check if it should repeat today
-                    if (h.repeat_type === 'daily') return true;
-                    if (h.repeat_type === 'weekly' && h.repeat_day_of_week === currentDayOfWeek) return true;
-                    return false;
-                });
+                    if (habitsData && habitsData.length > 0) {
+                        const habitsToGenerate = habitsData.filter(h => {
+                            // Check if generated today
+                            if (h.last_generated_date === todayDateStr) return false;
+                            // Check if it should repeat today
+                            if (h.repeat_type === 'daily') return true;
+                            if (h.repeat_type === 'weekly' && h.repeat_day_of_week === currentDayOfWeek) return true;
+                            return false;
+                        });
 
-                if (habitsToGenerate.length > 0) {
-                    const todosToInsert = habitsToGenerate.map(h => {
-                        let newScheduledAt = null;
-                        if (h.scheduled_time) {
-                            newScheduledAt = `${todayDateStr}T${h.scheduled_time}Z`;
+                        if (habitsToGenerate.length > 0) {
+                            const todosToInsert = habitsToGenerate.map(h => {
+                                let newScheduledAt = null;
+                                if (h.scheduled_time) {
+                                    newScheduledAt = `${todayDateStr}T${h.scheduled_time}Z`;
+                                }
+                                return {
+                                    user_id: user.id,
+                                    task: h.title,
+                                    estimated_seconds: h.estimated_seconds,
+                                    location: h.location,
+                                    purpose: h.purpose,
+                                    scheduled_at: newScheduledAt,
+                                    habit_id: h.id,
+                                };
+                            });
+
+                            await supabase.from('todos').insert(todosToInsert);
+
+                            // Update habits last_generated_date
+                            await supabase.from('habits')
+                                .update({ last_generated_date: todayDateStr })
+                                .in('id', habitsToGenerate.map(h => h.id));
                         }
-                        return {
-                            user_id: user.id,
-                            task: h.title,
-                            estimated_seconds: h.estimated_seconds,
-                            location: h.location,
-                            purpose: h.purpose,
-                            scheduled_at: newScheduledAt,
-                            habit_id: h.id,
-                        };
-                    });
-
-                    await supabase.from('todos').insert(todosToInsert);
-
-                    // Update habits last_generated_date
-                    await supabase.from('habits')
-                        .update({ last_generated_date: todayDateStr })
-                        .in('id', habitsToGenerate.map(h => h.id));
+                    }
+                } finally {
+                    generatingHabitsRef.current = false;
                 }
             }
             // --- END HABIT AUTOGENERATION ---
@@ -95,7 +110,7 @@ const Dashboard: React.FC = () => {
                     title: t.task,
                     completed: t.is_completed,
                     timeSpent: t.time_spent || 0,
-                    estimatedSeconds: t.estimated_seconds || 3600,
+                    estimatedSeconds: t.estimated_seconds ?? 0,
                     location: t.location || undefined,
                     purpose: t.purpose || undefined,
                     scheduledAt: t.scheduled_at || undefined,
@@ -347,7 +362,17 @@ const Dashboard: React.FC = () => {
         setTimerStatus('idle');
         setSeconds(0);
         setActiveTaskId(null);
-        setCurrentView('dashboard');
+
+        // TEMPORARY FOR TESTING: Trigger break flow even on manual complete
+        if (task.estimatedSeconds > 0) {
+            setCompletedTaskName(task.title);
+            setBreakPhase('victory');
+            setBreakActivity(null);
+            setBreakSeconds(300);
+            setCurrentView('guided-break');
+        } else {
+            setCurrentView('dashboard');
+        }
     };
 
     const handleAddTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number }) => {
@@ -441,9 +466,15 @@ const Dashboard: React.FC = () => {
                         ));
                         updateTaskStatus(activeTaskId, true, newTotalTime);
                         logFocusSession(task.estimatedSeconds);
+
+                        // Enter guided break flow
+                        setCompletedTaskName(task.title);
+                        setBreakPhase('victory');
+                        setBreakActivity(null);
+                        setBreakSeconds(300);
+                        setCurrentView('guided-break');
                     }
                     setActiveTaskId(null);
-                    setCurrentView('dashboard');
                 }
             };
 
@@ -483,6 +514,59 @@ const Dashboard: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [timerStatus, activeTaskId, tasks]);
 
+    // ── Break countdown timer ──────────────────────────────
+    const breakTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const breakEndTimeRef = useRef<number>(0);
+
+    useEffect(() => {
+        if (currentView === 'guided-break' && breakPhase === 'active') {
+            breakEndTimeRef.current = Date.now() + breakSeconds * 1000;
+
+            const tick = () => {
+                const remaining = Math.ceil((breakEndTimeRef.current - Date.now()) / 1000);
+                if (remaining <= 0) {
+                    setBreakSeconds(0);
+                    const hasTasks = tasks.some(t => !t.completed && t.estimatedSeconds > 0);
+                    setBreakPhase(hasTasks ? 'decision' : 'all-done');
+                } else {
+                    setBreakSeconds(remaining);
+                }
+            };
+
+            breakTimerRef.current = setInterval(tick, 250);
+            return () => {
+                if (breakTimerRef.current) clearInterval(breakTimerRef.current);
+            };
+        } else {
+            if (breakTimerRef.current) clearInterval(breakTimerRef.current);
+            return undefined;
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentView, breakPhase]);
+
+    // ── Break handlers ─────────────────────────────────────
+    const handleDrinkWater = () => setBreakPhase('select');
+
+    const handleSelectBreakActivity = (activity: BreakActivity) => {
+        setBreakActivity(activity);
+        setBreakSeconds(300);
+        setBreakPhase('active');
+    };
+
+    const handleSkipBreak = () => {
+        const hasTasks = tasks.some(t => !t.completed && t.estimatedSeconds > 0);
+        setBreakPhase(hasTasks ? 'decision' : 'all-done');
+    };
+
+    const handleBreakDone = () => {
+        setCurrentView('dashboard');
+    };
+
+    const handleBreakContinue = (taskId: string) => {
+        setCurrentView('dashboard'); // briefly reset
+        handlePlayTask(taskId);      // immediately starts the new timer
+    };
+
     return (
         <div className="relative h-screen w-full bg-[#0d0814] text-white overflow-hidden select-none">
 
@@ -492,7 +576,20 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* View Rendering */}
-            {currentView === 'timer' ? (
+            {currentView === 'guided-break' ? (
+                <GuidedBreak
+                    phase={breakPhase}
+                    taskName={completedTaskName}
+                    breakActivity={breakActivity}
+                    breakSeconds={breakSeconds}
+                    remainingTasks={tasks.filter(t => !t.completed && t.estimatedSeconds > 0)}
+                    onDrinkWater={handleDrinkWater}
+                    onSelectActivity={handleSelectBreakActivity}
+                    onSkipBreak={handleSkipBreak}
+                    onDone={handleBreakDone}
+                    onContinue={handleBreakContinue}
+                />
+            ) : currentView === 'timer' ? (
                 <TimerView
                     timerStatus={timerStatus}
                     seconds={seconds}

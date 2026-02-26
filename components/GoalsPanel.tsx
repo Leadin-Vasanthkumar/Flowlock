@@ -67,10 +67,6 @@ const GoalCard: React.FC<GoalCardProps> = ({ type, label, sublabel, placeholder,
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSave();
-        }
         if (e.key === 'Escape') {
             setText(value);
             setIsEditing(false);
@@ -120,9 +116,9 @@ const GoalCard: React.FC<GoalCardProps> = ({ type, label, sublabel, placeholder,
             />
 
             {/* Layout: text on left, image on right */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 h-full">
                 {/* Left side: header + content */}
-                <div className="flex-1 min-w-0" style={{ cursor: 'text' }} onClick={() => !isEditing && setIsEditing(true)}>
+                <div className="flex-1 min-w-0 flex flex-col h-full" style={{ cursor: 'text' }} onClick={() => !isEditing && setIsEditing(true)}>
                     {/* Header */}
                     <div className="flex items-center justify-between mb-2.5">
                         <div className="flex items-center gap-3">
@@ -145,57 +141,91 @@ const GoalCard: React.FC<GoalCardProps> = ({ type, label, sublabel, placeholder,
                                 <p className="text-[11px] text-slate-500 mt-0.5">{sublabel}</p>
                             </div>
                         </div>
-                        {/* Save indicator */}
-                        <div
-                            className="flex items-center gap-1 text-[10px] transition-opacity"
-                            style={{
-                                opacity: saving ? 1 : showSaved ? 1 : 0,
-                                color: saving ? 'rgba(255,255,255,0.3)' : '#22c55e',
-                            }}
-                        >
-                            {saving ? (
-                                <div className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
-                            ) : showSaved ? (
-                                <>
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        {/* Actions / Save indicator */}
+                        <div className="flex items-center gap-2">
+                            {isEditing && (
+                                <button
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        handleSave();
+                                    }}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all hover:opacity-90 active:scale-95 shadow-sm"
+                                    style={{
+                                        backgroundColor: accentColor,
+                                        color: 'white',
+                                    }}
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
-                                    saved
-                                </>
-                            ) : null}
+                                    Save
+                                </button>
+                            )}
+                            <div
+                                className="flex items-center gap-1 text-[10px] transition-opacity"
+                                style={{
+                                    opacity: saving ? 1 : showSaved ? 1 : 0,
+                                    color: saving ? 'rgba(255,255,255,0.3)' : '#22c55e',
+                                }}
+                            >
+                                {saving ? (
+                                    <div className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
+                                ) : showSaved ? (
+                                    <>
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        saved
+                                    </>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
 
                     {/* Content */}
                     {isEditing ? (
-                        <textarea
-                            ref={textareaRef}
-                            value={text}
-                            onChange={e => setText(e.target.value)}
-                            onBlur={handleSave}
-                            onKeyDown={handleKeyDown}
-                            placeholder={placeholder}
-                            rows={2}
-                            className="w-full bg-transparent text-white text-base outline-none resize-none placeholder-slate-600 leading-relaxed font-medium"
-                            style={{
-                                fontFamily: "'Inter', sans-serif",
-                                caretColor: accentColor,
-                            }}
-                        />
+                        <div className="flex flex-col flex-1 overflow-hidden" style={{ minHeight: '60px' }}>
+                            <textarea
+                                ref={textareaRef}
+                                value={text}
+                                onChange={e => setText(e.target.value)}
+                                onBlur={handleSave}
+                                onKeyDown={handleKeyDown}
+                                placeholder={placeholder}
+                                className="w-full h-full bg-transparent text-white text-base outline-none resize-none placeholder-slate-600 leading-relaxed font-medium"
+                                style={{
+                                    fontFamily: "'Inter', sans-serif",
+                                    caretColor: accentColor,
+                                    overflowY: 'auto'
+                                }}
+                            />
+                        </div>
                     ) : (
-                        <p
-                            className="leading-relaxed transition-colors"
-                            style={{
-                                color: text ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)',
-                                fontFamily: "'Inter', sans-serif",
-                                fontStyle: text ? 'normal' : 'italic',
-                                fontWeight: text ? 600 : 400,
-                                fontSize: text ? '15px' : '14px',
-                                minHeight: '32px',
-                            }}
-                        >
-                            {text || placeholder}
-                        </p>
+                        <div className="flex-1 overflow-y-auto" style={{
+                            scrollbarWidth: 'none',
+                            msOverflowStyle: 'none',
+                        }}>
+                            <style>
+                                {`
+                                    .flex-1.overflow-y-auto::-webkit-scrollbar {
+                                        display: none;
+                                    }
+                                `}
+                            </style>
+                            <p
+                                className="leading-relaxed transition-colors whitespace-pre-wrap pb-2"
+                                style={{
+                                    color: text ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)',
+                                    fontFamily: "'Inter', sans-serif",
+                                    fontStyle: text ? 'normal' : 'italic',
+                                    fontWeight: text ? 600 : 400,
+                                    fontSize: text ? '15px' : '14px',
+                                    minHeight: '32px',
+                                }}
+                            >
+                                {text || placeholder}
+                            </p>
+                        </div>
                     )}
                 </div>
 
@@ -332,21 +362,21 @@ const GoalsPanel: React.FC<GoalsPanelProps> = ({ goals, onSaveGoal, onSaveGoalIm
                 <p className="text-xs text-slate-500 mt-1">Stay aligned with your vision</p>
             </div>
 
-            {/* Daily Non-Negotiable — featured at the top */}
+            {/* Gratitude — featured at the top */}
             <GoalCard
                 type="day"
-                label="Today's Non-Negotiable"
-                sublabel="The ONE thing you must complete today"
-                placeholder="What is the one thing that will move you forward today?"
+                label="Gratitude"
+                sublabel="What you are grateful for"
+                placeholder="I am grateful for..."
                 value={goals.day}
                 imageUrl={goals.dayImage}
                 onSave={(content) => onSaveGoal('day', content)}
                 onImageUpload={(file) => handleImageUpload('day', file)}
                 onImageRemove={() => handleImageRemove('day')}
-                accentColor="#f59e0b"
+                accentColor="#f43f5e"
                 icon={
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0117 10c0 3-2.5 5-5 8-2.5-3-5-5-5-8a5 5 0 011.5-3.5C9.5 5.5 11 5 12 2z" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                 }
             />

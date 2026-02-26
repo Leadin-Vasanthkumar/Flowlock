@@ -194,12 +194,14 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                 <h4 className="text-white font-semibold text-sm leading-snug mb-1.5">{task.title}</h4>
                                                 <div className="flex flex-wrap items-center gap-3">
                                                     {/* Duration tag */}
-                                                    <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                        {formatDuration(task.estimatedSeconds)}
-                                                    </span>
+                                                    {task.estimatedSeconds > 0 && (
+                                                        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            {formatDuration(task.estimatedSeconds)}
+                                                        </span>
+                                                    )}
                                                     {/* Habit tag */}
                                                     {task.habitId && (
                                                         <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: '#ec4899' }}>
@@ -260,20 +262,22 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                     </svg>
                                                 </button>
                                                 {/* Play */}
-                                                <button
-                                                    onClick={() => onPlayTask(task.id)}
-                                                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                                                    style={{
-                                                        background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                                                        boxShadow: '0 4px 16px -2px rgba(127,25,230,0.35)',
-                                                    }}
-                                                    title="Start timer"
-                                                    aria-label="Start timer"
-                                                >
-                                                    <svg className="w-4 h-4 text-white translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
-                                                        <path d="M8 5v14l11-7z" />
-                                                    </svg>
-                                                </button>
+                                                {task.estimatedSeconds > 0 && (
+                                                    <button
+                                                        onClick={() => onPlayTask(task.id)}
+                                                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
+                                                            boxShadow: '0 4px 16px -2px rgba(127,25,230,0.35)',
+                                                        }}
+                                                        title="Start timer"
+                                                        aria-label="Start timer"
+                                                    >
+                                                        <svg className="w-4 h-4 text-white translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M8 5v14l11-7z" />
+                                                        </svg>
+                                                    </button>
+                                                )}
                                             </div>
                                         </>
                                     )}
@@ -307,7 +311,9 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                             </svg>
                                         </button>
                                         <span className="text-sm text-slate-600 line-through flex-1">{task.title}</span>
-                                        <span className="text-xs text-slate-700">{formatDuration(task.estimatedSeconds)}</span>
+                                        {task.estimatedSeconds > 0 && (
+                                            <span className="text-xs text-slate-700">{formatDuration(task.estimatedSeconds)}</span>
+                                        )}
                                         <button
                                             onClick={() => onDeleteTask(task.id)}
                                             className="opacity-0 group-hover:opacity-100 p-1 text-slate-700 hover:text-red-400 transition-all"
