@@ -41,6 +41,23 @@ const Dashboard: React.FC = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
+            // --- DAILY AUTO-RESET: delete stale todos from previous days ---
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const { data: existingTodos } = await supabase
+                .from('todos')
+                .select('id, inserted_at')
+                .eq('user_id', user.id)
+                .limit(1);
+            if (existingTodos && existingTodos.length > 0) {
+                const oldestDate = new Date(existingTodos[0].inserted_at);
+                if (oldestDate < todayStart) {
+                    // Stale todos found — wipe everything from previous days
+                    await supabase.from('todos').delete().eq('user_id', user.id);
+                }
+            }
+            // --- END DAILY AUTO-RESET ---
+
             // --- HABIT AUTOGENERATION LOGIC ---
             if (!generatingHabitsRef.current) {
                 generatingHabitsRef.current = true;
@@ -153,12 +170,14 @@ const Dashboard: React.FC = () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
+            const imageKey = `${type}Image` as 'yearImage' | 'monthImage' | 'weekImage' | 'dayImage';
             const { error } = await supabase
                 .from('goals')
                 .upsert({
                     user_id: user.id,
                     goal_type: type,
                     content,
+                    image_url: goals[imageKey] || null,
                     updated_at: new Date().toISOString(),
                 }, { onConflict: 'user_id,goal_type' });
             if (error) throw error;
@@ -177,6 +196,7 @@ const Dashboard: React.FC = () => {
                 .upsert({
                     user_id: user.id,
                     goal_type: type,
+                    content: goals[type] || '',
                     image_url: imageUrl,
                     updated_at: new Date().toISOString(),
                 }, { onConflict: 'user_id,goal_type' });
@@ -290,21 +310,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleFinishDay = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { error } = await supabase.from('todos').delete().eq('user_id', user.id);
-            if (error) throw error;
-            setTasks([]);
-            setActiveTaskId(null);
-            setTimerStatus('idle');
-            setSeconds(0);
-            if (currentView === 'timer') setCurrentView('dashboard');
-        } catch (error) {
-            console.error('Error finishing day:', error);
-        }
-    };
+
 
     // Notification sound
     const playNotification = () => {
@@ -544,12 +550,36 @@ const Dashboard: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentView, breakPhase]);
 
+    // ── Midnight auto-reset timer ──────────────────────────
+    useEffect(() => {
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setHours(24, 0, 0, 0); // next midnight
+        const msUntilMidnight = midnight.getTime() - now.getTime();
+
+        const timer = setTimeout(() => {
+            // Clear local state immediately
+            setTasks([]);
+            setActiveTaskId(null);
+            setTimerStatus('idle');
+            setSeconds(0);
+            if (currentView === 'timer' || currentView === 'guided-break') {
+                setCurrentView('dashboard');
+            }
+            // Re-fetch: will wipe stale todos + regenerate habits
+            fetchTasks();
+        }, msUntilMidnight);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // ── Break handlers ─────────────────────────────────────
     const handleDrinkWater = () => setBreakPhase('select');
 
     const handleSelectBreakActivity = (activity: BreakActivity) => {
         setBreakActivity(activity);
-        setBreakSeconds(300);
+        setBreakSeconds(activity === 'stretches' ? 120 : 300);
         setBreakPhase('active');
     };
 
@@ -613,7 +643,7 @@ const Dashboard: React.FC = () => {
                     goals={goals}
                     onSaveGoal={handleSaveGoal}
                     onSaveGoalImage={handleSaveGoalImage}
-                    onFinishDay={handleFinishDay}
+
                 />
             )}
         </div>

@@ -176,7 +176,10 @@ const LandingPage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7f19e6, #a855f7)' }}>
                         <svg width="18" height="18" fill="white" viewBox="0 0 48 48"><path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" /></svg>
                     </div>
-                    <span className="text-base font-bold tracking-tight text-white">Flowlock</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-base font-bold tracking-tight text-white">Flowlock</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest text-[#a855f7] uppercase" style={{ background: 'rgba(127,25,230,0.15)', border: '1px solid rgba(127,25,230,0.3)' }}>Beta</span>
+                    </div>
                 </button>
 
                 {/* Links */}

@@ -17,7 +17,6 @@ interface TaskDashboardProps {
     goals: GoalData;
     onSaveGoal: (type: 'year' | 'month' | 'week' | 'day', content: string) => Promise<void>;
     onSaveGoalImage: (type: 'year' | 'month' | 'week' | 'day', imageUrl: string | null) => Promise<void>;
-    onFinishDay: () => Promise<void>;
 }
 
 const formatDuration = (totalSeconds: number): string => {
@@ -59,7 +58,6 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
     goals,
     onSaveGoal,
     onSaveGoalImage,
-    onFinishDay,
 }) => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -86,6 +84,17 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
 
             {/* Left Column: Tasks */}
             <div className="flex flex-col px-4 sm:px-6 md:px-12 pt-6 sm:pt-8 pb-8 sm:pb-12 overflow-y-auto">
+
+                {/* Logo & Beta Marker */}
+                <div className="flex items-center gap-2 mb-8">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7f19e6, #a855f7)' }}>
+                        <svg width="18" height="18" fill="white" viewBox="0 0 48 48"><path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" /></svg>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-base font-bold tracking-tight text-white">Flowlock</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest text-[#a855f7] uppercase" style={{ background: 'rgba(127,25,230,0.15)', border: '1px solid rgba(127,25,230,0.3)' }}>Beta</span>
+                    </div>
+                </div>
 
                 {/* Header */}
                 <div className="mb-10">
@@ -329,32 +338,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                     )}
                 </div>
 
-                {/* Finish the Day Button */}
-                {tasks.length > 0 && (
-                    <div className="mt-6 mb-4 flex justify-center">
-                        <button
-                            onClick={async () => {
-                                if (window.confirm('Finish the day? This will clear all your tasks so you can start fresh tomorrow.')) {
-                                    await onFinishDay();
-                                }
-                            }}
-                            className="py-3 px-6 rounded-xl flex items-center gap-2.5 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer"
-                            style={{
-                                background: 'rgba(127,25,230,0.1)',
-                                border: '1px solid rgba(127,25,230,0.2)',
-                            }}
-                            aria-label="Finish the day"
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                                <circle cx="12" cy="12" r="4" />
-                            </svg>
-                            <span className="text-sm font-medium" style={{ color: '#a855f7' }}>
-                                Finish the Day
-                            </span>
-                        </button>
-                    </div>
-                )}
+
             </div>
 
             {/* Right Column: Goals (Desktop) */}

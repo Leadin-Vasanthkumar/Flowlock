@@ -144,7 +144,7 @@ const SelectPhase: React.FC<{ onSelect: (a: BreakActivity) => void }> = ({ onSel
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">
                 Choose your reset
             </h2>
-            <p className="text-sm text-white/40">Pick an activity for a 5-minute neural reset</p>
+            <p className="text-sm text-white/40">Pick an activity for a quick neural reset</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-5 w-full max-w-4xl mt-4">
@@ -204,7 +204,8 @@ const ActivePhase: React.FC<{
     onSkip: () => void;
 }> = ({ activity, seconds, onSkip }) => {
     const activityInfo = activities.find(a => a.id === activity);
-    const progress = Math.max(0, Math.min(1, 1 - seconds / 300));
+    const totalDuration = activity === 'stretches' ? 120 : 300;
+    const progress = Math.max(0, Math.min(1, 1 - seconds / totalDuration));
 
     return (
         <motion.div
