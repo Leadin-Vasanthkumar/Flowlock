@@ -162,12 +162,14 @@ const LandingPage: React.FC = () => {
             <nav
                 className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between px-6 py-3 rounded-2xl transition-all duration-500"
                 style={{
-                    ...glassSubtle,
+                    background: 'rgba(255,255,255,0.02)',
+                    backdropFilter: 'blur(16px)',
+                    border: 'none',
                     ...(scrolled ? {
                         background: 'rgba(13,8,20,0.85)',
                         backdropFilter: 'blur(24px) saturate(200%)',
                         boxShadow: '0 8px 32px -8px rgba(0,0,0,0.6)',
-                        borderColor: 'rgba(255,255,255,0.1)',
+                        border: 'none',
                     } : {}),
                 }}
             >
