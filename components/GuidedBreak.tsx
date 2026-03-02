@@ -2,6 +2,9 @@ import React from 'react';
 import { Task } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowingEffect } from './ui/glowing-effect';
+import BoxBreathingAnimation from './BoxBreathingAnimation';
+import DoodlingAnimation from './DoodlingAnimation';
+import StretchesAnimation from './StretchesAnimation';
 
 export type BreakPhase = 'victory' | 'select' | 'active' | 'decision' | 'all-done';
 export type BreakActivity = 'breathing' | 'doodling' | 'stretches';
@@ -203,59 +206,22 @@ const ActivePhase: React.FC<{
     seconds: number;
     onSkip: () => void;
 }> = ({ activity, seconds, onSkip }) => {
-    const activityInfo = activities.find(a => a.id === activity);
-    const totalDuration = activity === 'stretches' ? 120 : 300;
-    const progress = Math.max(0, Math.min(1, 1 - seconds / totalDuration));
+    // For breathing, use the dedicated animation component
+    if (activity === 'breathing') {
+        return <BoxBreathingAnimation seconds={seconds} onSkip={onSkip} />;
+    }
 
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col items-center justify-center text-center px-6 gap-6"
-        >
-            {/* Soothing gradient */}
-            <div className="absolute inset-0 pointer-events-none z-0">
-                <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full blur-[140px] animate-pulse"
-                    style={{ background: 'rgba(127,25,230,0.12)', animationDuration: '6s' }} />
-                <div className="absolute bottom-1/3 right-1/4 w-[350px] h-[350px] rounded-full blur-[120px] animate-pulse"
-                    style={{ background: 'rgba(168,85,247,0.08)', animationDuration: '8s', animationDelay: '2s' }} />
-            </div>
+    // For doodling, use the dedicated guide component
+    if (activity === 'doodling') {
+        return <DoodlingAnimation seconds={seconds} onSkip={onSkip} />;
+    }
 
-            {/* Activity label */}
-            <div className="relative z-10 flex items-center gap-2 px-4 py-2 rounded-full"
-                style={{ background: 'rgba(127,25,230,0.1)', border: '1px solid rgba(127,25,230,0.2)' }}
-            >
-                <div className="text-[#a855f7] w-5 h-5 flex items-center justify-center">{activityInfo?.icon}</div>
-                <span className="text-xs font-semibold text-[#a855f7] uppercase tracking-wider">{activityInfo?.title}</span>
-            </div>
+    // For stretches, use the dedicated guide component
+    if (activity === 'stretches') {
+        return <StretchesAnimation seconds={seconds} onSkip={onSkip} />;
+    }
 
-            {/* Big countdown */}
-            <h1 className="relative z-10 text-[6rem] sm:text-[8rem] md:text-[12rem] font-bold tracking-tighter text-white/90 drop-shadow-[0_0_40px_rgba(127,25,230,0.15)]">
-                {formatBreakTime(seconds)}
-            </h1>
-
-            {/* Progress bar */}
-            <div className="relative z-10 w-48 h-1 rounded-full bg-white/5 overflow-hidden">
-                <div
-                    className="h-full rounded-full transition-all duration-1000 ease-linear"
-                    style={{
-                        width: `${progress * 100}%`,
-                        background: 'linear-gradient(90deg, #7f19e6, #a855f7)',
-                    }}
-                />
-            </div>
-
-            {/* Skip */}
-            <button
-                onClick={onSkip}
-                className="relative z-10 mt-4 text-xs text-white/20 hover:text-white/50 transition-colors cursor-pointer uppercase tracking-widest"
-            >
-                Skip break
-            </button>
-        </motion.div>
-    );
+    return null; // Fallback should never hit if activities are properly defined
 };
 
 // ── Phase 4: Decision Bridge ──────────────────────────────
