@@ -6,6 +6,7 @@ import AuthPage from './components/AuthPage';
 import SignUpPage from './components/SignUpPage';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 
 const App: React.FC = () => {
   const [session, setSession] = useState(null);
@@ -48,6 +49,10 @@ const App: React.FC = () => {
         <Route
           path="/signup"
           element={!session ? <SignUpPage /> : <Navigate to="/app" replace />}
+        />
+        <Route
+          path="/reset-password"
+          element={<ResetPasswordPage />}
         />
         <Route
           path="/app"
