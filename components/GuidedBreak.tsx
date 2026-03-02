@@ -5,9 +5,10 @@ import { GlowingEffect } from './ui/glowing-effect';
 import BoxBreathingAnimation from './BoxBreathingAnimation';
 import DoodlingAnimation from './DoodlingAnimation';
 import StretchesAnimation from './StretchesAnimation';
+import NSDRAnimation from './NSDRAnimation';
 
 export type BreakPhase = 'victory' | 'select' | 'active' | 'decision' | 'all-done';
-export type BreakActivity = 'breathing' | 'doodling' | 'stretches';
+export type BreakActivity = 'breathing' | 'doodling' | 'stretches' | 'nsdr';
 
 interface GuidedBreakProps {
     phase: BreakPhase;
@@ -133,6 +134,16 @@ const activities: { id: BreakActivity; title: string; subtitle: string; icon: Re
             </svg>
         ),
     },
+    {
+        id: 'nsdr',
+        title: 'NSDR',
+        subtitle: 'Deep rest without sleeping',
+        icon: (
+            <svg className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            </svg>
+        ),
+    },
 ];
 
 const SelectPhase: React.FC<{ onSelect: (a: BreakActivity) => void }> = ({ onSelect }) => (
@@ -219,6 +230,11 @@ const ActivePhase: React.FC<{
     // For stretches, use the dedicated guide component
     if (activity === 'stretches') {
         return <StretchesAnimation seconds={seconds} onSkip={onSkip} />;
+    }
+
+    // For NSDR, use the YouTube embed component
+    if (activity === 'nsdr') {
+        return <NSDRAnimation seconds={seconds} onSkip={onSkip} />;
     }
 
     return null; // Fallback should never hit if activities are properly defined
