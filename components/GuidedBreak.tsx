@@ -364,18 +364,120 @@ const AllDonePhase: React.FC<{ onDone: () => void }> = ({ onDone }) => (
             style={{ background: 'radial-gradient(circle, rgba(127,25,230,0.3) 0%, transparent 70%)' }}
         />
 
-        {/* Big Star/Trophy icon */}
-        <div className="relative w-32 h-32 rounded-full flex items-center justify-center animate-bounce"
-            style={{
-                background: 'rgba(127,25,230,0.15)',
-                border: '2px solid rgba(127,25,230,0.4)',
-                boxShadow: '0 0 80px rgba(127,25,230,0.3)',
-                animationDuration: '3s'
-            }}
-        >
-            <svg className="w-16 h-16 text-[#a855f7]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 19.446l-7.416 3.967 1.48-8.279-6.064-5.828 8.332-1.151z" />
-            </svg>
+        {/* Celebration Animation Container */}
+        <div className="relative w-48 h-48 flex items-center justify-center">
+            {/* Pulsing sonar rings */}
+            {[0, 1, 2].map((i) => (
+                <motion.div
+                    key={`ring-${i}`}
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                        border: '1.5px solid rgba(168,85,247,0.3)',
+                    }}
+                    initial={{ scale: 0.5, opacity: 0.6 }}
+                    animate={{ scale: 2.2, opacity: 0 }}
+                    transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        delay: i * 1,
+                        ease: 'easeOut',
+                    }}
+                />
+            ))}
+
+            {/* Orbiting dots */}
+            {[
+                { size: 8, radius: 80, duration: 6, color: '#a855f7' },
+                { size: 6, radius: 90, duration: 8, color: '#c084fc' },
+                { size: 5, radius: 70, duration: 5, color: '#7c3aed' },
+                { size: 4, radius: 95, duration: 10, color: '#e9d5ff' },
+            ].map((dot, i) => (
+                <motion.div
+                    key={`orbit-${i}`}
+                    className="absolute rounded-full"
+                    style={{
+                        width: dot.size,
+                        height: dot.size,
+                        background: dot.color,
+                        boxShadow: `0 0 ${dot.size * 3}px ${dot.color}`,
+                        top: '50%',
+                        left: '50%',
+                        marginTop: -dot.size / 2,
+                        marginLeft: -dot.size / 2,
+                    }}
+                    animate={{
+                        x: [
+                            Math.cos(0) * dot.radius,
+                            Math.cos(Math.PI * 0.5) * dot.radius,
+                            Math.cos(Math.PI) * dot.radius,
+                            Math.cos(Math.PI * 1.5) * dot.radius,
+                            Math.cos(Math.PI * 2) * dot.radius,
+                        ],
+                        y: [
+                            Math.sin(0) * dot.radius,
+                            Math.sin(Math.PI * 0.5) * dot.radius,
+                            Math.sin(Math.PI) * dot.radius,
+                            Math.sin(Math.PI * 1.5) * dot.radius,
+                            Math.sin(Math.PI * 2) * dot.radius,
+                        ],
+                    }}
+                    transition={{
+                        duration: dot.duration,
+                        repeat: Infinity,
+                        ease: 'linear',
+                    }}
+                />
+            ))}
+
+            {/* Floating sparkle particles */}
+            {[...Array(6)].map((_, i) => (
+                <motion.div
+                    key={`sparkle-${i}`}
+                    className="absolute"
+                    style={{
+                        width: 3,
+                        height: 3,
+                        borderRadius: '50%',
+                        background: '#c084fc',
+                        left: `${20 + Math.random() * 60}%`,
+                        bottom: '10%',
+                    }}
+                    animate={{
+                        y: [-10, -120 - Math.random() * 60],
+                        x: [0, (Math.random() - 0.5) * 40],
+                        opacity: [0, 1, 0],
+                        scale: [0, 1.2, 0],
+                    }}
+                    transition={{
+                        duration: 2.5 + Math.random() * 1.5,
+                        repeat: Infinity,
+                        delay: i * 0.5,
+                        ease: 'easeOut',
+                    }}
+                />
+            ))}
+
+            {/* Star icon — slow rotation */}
+            <motion.div
+                className="relative w-28 h-28 rounded-full flex items-center justify-center z-10"
+                style={{
+                    background: 'rgba(127,25,230,0.15)',
+                    border: '2px solid rgba(127,25,230,0.4)',
+                    boxShadow: '0 0 80px rgba(127,25,230,0.3)',
+                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            >
+                <motion.svg
+                    className="w-14 h-14 text-[#a855f7]"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                    <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 19.446l-7.416 3.967 1.48-8.279-6.064-5.828 8.332-1.151z" />
+                </motion.svg>
+            </motion.div>
         </div>
 
         <div className="max-w-xl">
