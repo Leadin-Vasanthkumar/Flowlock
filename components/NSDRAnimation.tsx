@@ -1,5 +1,13 @@
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
+
+// Extend Window to include YT API types
+declare global {
+    interface Window {
+        YT: any;
+        onYouTubeIframeAPIReady: (() => void) | undefined;
+    }
+}
 
 interface NSDRAnimationProps {
     seconds: number;
@@ -7,6 +15,64 @@ interface NSDRAnimationProps {
 }
 
 const NSDRAnimation: React.FC<NSDRAnimationProps> = ({ seconds, onSkip }) => {
+    const playerContainerRef = useRef<HTMLDivElement>(null);
+    const playerRef = useRef<any>(null);
+    const onSkipRef = useRef(onSkip);
+
+    // Keep onSkip ref up to date so the YT callback always calls the latest version
+    useEffect(() => {
+        onSkipRef.current = onSkip;
+    }, [onSkip]);
+
+    const initPlayer = useCallback(() => {
+        if (!playerContainerRef.current || playerRef.current) return;
+
+        playerRef.current = new window.YT.Player(playerContainerRef.current, {
+            videoId: 'KHIbgSN2qAU',
+            playerVars: {
+                rel: 0,
+                modestbranding: 1,
+            },
+            events: {
+                onStateChange: (event: any) => {
+                    // YT.PlayerState.ENDED === 0
+                    if (event.data === 0) {
+                        onSkipRef.current();
+                    }
+                },
+            },
+        });
+    }, []);
+
+    useEffect(() => {
+        // If YT API is already loaded, init immediately
+        if (window.YT && window.YT.Player) {
+            initPlayer();
+            return;
+        }
+
+        // Otherwise load the API script
+        const existingScript = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+        if (!existingScript) {
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(tag);
+        }
+
+        // YouTube API calls this global function when ready
+        window.onYouTubeIframeAPIReady = () => {
+            initPlayer();
+        };
+
+        return () => {
+            // Cleanup: destroy the player on unmount
+            if (playerRef.current && playerRef.current.destroy) {
+                playerRef.current.destroy();
+                playerRef.current = null;
+            }
+        };
+    }, [initPlayer]);
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -33,7 +99,7 @@ const NSDRAnimation: React.FC<NSDRAnimationProps> = ({ seconds, onSkip }) => {
                 <span className="text-sm font-semibold text-teal-400 uppercase tracking-wider">Non-Sleep Deep Rest</span>
             </div>
 
-            {/* YouTube Video Embed */}
+            {/* YouTube Video Embed via IFrame Player API */}
             <div className="relative z-10 w-full">
                 <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl"
                     style={{
@@ -42,14 +108,7 @@ const NSDRAnimation: React.FC<NSDRAnimationProps> = ({ seconds, onSkip }) => {
                         boxShadow: '0 16px 64px rgba(0,0,0,0.5), 0 0 80px rgba(20,184,166,0.08)',
                     }}
                 >
-                    <iframe
-                        src="https://www.youtube.com/embed/KHIbgSN2qAU?rel=0&modestbranding=1"
-                        title="NSDR - Non-Sleep Deep Rest by Andrew Huberman"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="absolute inset-0 w-full h-full"
-                        style={{ border: 'none' }}
-                    />
+                    <div ref={playerContainerRef} className="absolute inset-0 w-full h-full" />
                 </div>
             </div>
 
