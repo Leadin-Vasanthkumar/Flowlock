@@ -163,11 +163,11 @@ const SignUpPage: React.FC = () => {
                                     {/* Email/password form */}
                                     <form onSubmit={handleEmailSignUp} className="space-y-5">
                                         <div>
-                                            <label className="block text-slate-300 text-sm font-medium mb-2" htmlFor="signup-email">Work Email</label>
+                                            <label className="block text-slate-300 text-sm font-medium mb-2" htmlFor="signup-email">Email</label>
                                             <input
                                                 id="signup-email"
                                                 type="email"
-                                                placeholder="name@company.com"
+                                                placeholder="you@email.com"
                                                 value={email}
                                                 onChange={e => setEmail(e.target.value)}
                                                 required

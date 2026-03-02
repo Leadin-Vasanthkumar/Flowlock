@@ -9,7 +9,10 @@ const AuthPage: React.FC = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
-    const [isSent, setIsSent] = useState(false);
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [forgotMode, setForgotMode] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
 
     const handleGoogleLogin = async () => {
         try {
@@ -36,23 +39,40 @@ const AuthPage: React.FC = () => {
         }
     };
 
-    const handleMagicLinkLogin = async (e: React.FormEvent) => {
+    const handlePasswordLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setLoading(true);
-            const { error } = await supabase.auth.signInWithOtp({
+            const { error } = await supabase.auth.signInWithPassword({
                 email,
-                options: {
-                    emailRedirectTo: window.location.origin
-                }
+                password,
             });
             if (error) throw error;
-            setIsSent(true);
         } catch (error) {
             if (error instanceof Error) {
                 alert(error.message);
             } else {
-                alert('An unexpected error occurred during email login');
+                alert('An unexpected error occurred during login');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/login`,
+            });
+            if (error) throw error;
+            setResetSent(true);
+        } catch (error) {
+            if (error instanceof Error) {
+                alert(error.message);
+            } else {
+                alert('An unexpected error occurred');
             }
         } finally {
             setLoading(false);
@@ -81,13 +101,16 @@ const AuthPage: React.FC = () => {
                                 <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd"></path>
                             </svg>
                         </div>
-                        <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Welcome back</h1>
-                        <p className="text-slate-400 text-sm">Elevate your workflow with Deep Flow</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-white mb-2">
+                            {forgotMode ? 'Reset your password' : 'Welcome back'}
+                        </h1>
+                        <p className="text-slate-400 text-sm">
+                            {forgotMode ? 'We\'ll send you a reset link' : 'Elevate your workflow with Deep Flow'}
+                        </p>
                     </div>
 
-                    {isSent ? (
+                    {resetSent ? (
                         <div className="text-center py-6 flex flex-col items-center gap-5">
-                            {/* Icon — no emoji */}
                             <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
                                 style={{
                                     background: 'rgba(127,25,230,0.15)',
@@ -101,7 +124,7 @@ const AuthPage: React.FC = () => {
                             <div className="space-y-1">
                                 <h3 className="text-lg font-semibold text-white">Check your inbox</h3>
                                 <p className="text-sm text-slate-500 leading-relaxed">
-                                    We sent a sign in link to
+                                    We sent a password reset link to
                                 </p>
                                 <p className="text-sm text-slate-200 font-medium">{email}</p>
                             </div>
@@ -109,12 +132,49 @@ const AuthPage: React.FC = () => {
                             <div className="w-full border-t border-white/[0.06]" />
 
                             <button
-                                onClick={() => setIsSent(false)}
+                                onClick={() => { setResetSent(false); setForgotMode(false); }}
                                 className="text-sm text-slate-400 hover:text-white transition-colors"
                             >
-                                Use a different email
+                                Back to login
                             </button>
                         </div>
+                    ) : forgotMode ? (
+                        <>
+                            {/* Forgot password form */}
+                            <form onSubmit={handleForgotPassword} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-300 ml-1" htmlFor="reset-email">Email Address</label>
+                                    <input
+                                        className="w-full h-14 rounded-2xl glass-input px-5 text-white placeholder:text-slate-600 focus:ring-0 focus:outline-none transition-all"
+                                        id="reset-email"
+                                        placeholder="you@email.com"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <button
+                                    className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#7f19e6]/20 mt-2 disabled:opacity-50 flex items-center justify-center"
+                                    type="submit"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        'Send Reset Link'
+                                    )}
+                                </button>
+                            </form>
+
+                            <button
+                                onClick={() => setForgotMode(false)}
+                                className="w-full mt-4 text-sm text-slate-400 hover:text-white transition-colors text-center"
+                            >
+                                ← Back to login
+                            </button>
+                        </>
                     ) : (
                         <>
                             {/* Social Logins */}
@@ -138,17 +198,17 @@ const AuthPage: React.FC = () => {
                                 <div className="absolute inset-0 flex items-center">
                                     <div className="w-full border-t border-white/10"></div>
                                 </div>
-                                <span className="relative bg-[#1a1122] px-4 text-[10px] font-medium text-slate-500 uppercase tracking-[0.2em]">or email login</span>
+                                <span className="relative bg-[#1a1122] px-4 text-[10px] font-medium text-slate-500 uppercase tracking-[0.2em]">or sign in with email</span>
                             </div>
 
                             {/* Login Form */}
-                            <form onSubmit={handleMagicLinkLogin} className="space-y-6">
+                            <form onSubmit={handlePasswordLogin} className="space-y-5">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-300 ml-1" htmlFor="email">Email Address</label>
                                     <input
                                         className="w-full h-14 rounded-2xl glass-input px-5 text-white placeholder:text-slate-600 focus:ring-0 focus:outline-none transition-all"
                                         id="email"
-                                        placeholder="name@company.com"
+                                        placeholder="you@email.com"
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
@@ -156,8 +216,45 @@ const AuthPage: React.FC = () => {
                                     />
                                 </div>
 
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-300 ml-1" htmlFor="login-password">Password</label>
+                                    <div className="relative">
+                                        <input
+                                            className="w-full h-14 rounded-2xl glass-input px-5 text-white placeholder:text-slate-600 focus:ring-0 focus:outline-none transition-all pr-14"
+                                            id="login-password"
+                                            placeholder="••••••••"
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                            minLength={6}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(p => !p)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                                        >
+                                            {showPassword ? (
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => setForgotMode(true)}
+                                        className="text-xs text-slate-500 hover:text-[#a855f7] transition-colors"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+
                                 <button
-                                    className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#7f19e6]/20 mt-2 disabled:opacity-50 flex items-center justify-center"
+                                    className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#7f19e6]/20 disabled:opacity-50 flex items-center justify-center"
                                     type="submit"
                                     disabled={loading}
                                 >
