@@ -467,7 +467,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading, 
                                 <input
                                     type="text"
                                     inputMode="numeric"
-                                    value={schedMinute === '' ? '' : schedMinute.toString().padStart(2, '0')}
+                                    value={schedMinute.toString()}
                                     maxLength={2}
                                     onFocus={(e) => e.target.select()}
                                     onChange={(e) => {

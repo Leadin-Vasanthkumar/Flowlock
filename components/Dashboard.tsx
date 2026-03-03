@@ -839,6 +839,7 @@ const Dashboard: React.FC = () => {
                     onSkipBreak={handleSkipBreak}
                     onDone={handleBreakDone}
                     onContinue={handleBreakContinue}
+                    onBack={() => setCurrentView('dashboard')}
                 />
             ) : currentView === 'timer' ? (
                 <TimerView
