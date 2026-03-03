@@ -5,7 +5,7 @@ import GuidedBreak, { BreakPhase, BreakActivity } from './GuidedBreak';
 import AnalysisPage from './AnalysisPage';
 import UserProfileMenu from './UserProfileMenu';
 import { GoalData } from './GoalsPanel';
-import { Task, Block, TimerStatus } from '../types';
+import { Task, Block, BlockSchedule, TimerStatus } from '../types';
 import { supabase } from '../lib/supabase';
 
 type ViewType = 'dashboard' | 'timer' | 'guided-break' | 'analysis';
@@ -19,6 +19,7 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', day: '', yearImage: undefined, monthImage: undefined, weekImage: undefined, dayImage: undefined });
     const [blocks, setBlocks] = useState<Block[]>([]);
+    const [blockSchedules, setBlockSchedules] = useState<BlockSchedule[]>([]);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const endTimeRef = useRef<number>(0);
@@ -37,6 +38,7 @@ const Dashboard: React.FC = () => {
         fetchTasks();
         fetchGoals();
         fetchBlocks();
+        fetchBlockSchedules();
     }, []);
 
     const fetchTasks = async () => {
@@ -264,6 +266,81 @@ const Dashboard: React.FC = () => {
             setTasks(prev => prev.map(t => t.blockId === id ? { ...t, blockId: undefined, blockName: undefined, blockColor: undefined } : t));
         } catch (error) {
             console.error('Error deleting block:', error);
+        }
+    };
+
+    // ─── Block Schedule CRUD ─────────────────────────────────
+    const fetchBlockSchedules = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data, error } = await supabase
+                .from('block_schedules')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('start_time', { ascending: true });
+            if (error) throw error;
+            if (data) {
+                setBlockSchedules(data.map(s => ({
+                    id: s.id,
+                    blockId: s.block_id,
+                    startTime: s.start_time?.substring(0, 5) || '',
+                    endTime: s.end_time?.substring(0, 5) || '',
+                })));
+            }
+        } catch (error) {
+            console.error('Error fetching block schedules:', error);
+        }
+    };
+
+    const handleCreateSchedule = async (blockId: string, startTime: string, endTime: string) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data, error } = await supabase
+                .from('block_schedules')
+                .insert({ user_id: user.id, block_id: blockId, start_time: startTime, end_time: endTime })
+                .select()
+                .single();
+            if (error) throw error;
+            if (data) {
+                setBlockSchedules(prev => [...prev, {
+                    id: data.id,
+                    blockId: data.block_id,
+                    startTime: data.start_time?.substring(0, 5) || '',
+                    endTime: data.end_time?.substring(0, 5) || '',
+                }].sort((a, b) => a.startTime.localeCompare(b.startTime)));
+            }
+        } catch (error) {
+            console.error('Error creating schedule:', error);
+        }
+    };
+
+    const handleUpdateSchedule = async (id: string, blockId: string, startTime: string, endTime: string) => {
+        try {
+            const { error } = await supabase
+                .from('block_schedules')
+                .update({ block_id: blockId, start_time: startTime, end_time: endTime })
+                .eq('id', id);
+            if (error) throw error;
+            setBlockSchedules(prev => prev
+                .map(s => s.id === id ? { ...s, blockId, startTime, endTime } : s)
+                .sort((a, b) => a.startTime.localeCompare(b.startTime)));
+        } catch (error) {
+            console.error('Error updating schedule:', error);
+        }
+    };
+
+    const handleDeleteSchedule = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('block_schedules')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            setBlockSchedules(prev => prev.filter(s => s.id !== id));
+        } catch (error) {
+            console.error('Error deleting schedule:', error);
         }
     };
 
@@ -688,6 +765,12 @@ const Dashboard: React.FC = () => {
     }, []);
 
     // ── Break handlers ─────────────────────────────────────
+    const handleStartUnscheduledBreak = () => {
+        setCompletedTaskName('');
+        setBreakPhase('select');
+        setCurrentView('guided-break');
+    };
+
     const handleDrinkWater = () => setBreakPhase('select');
 
     const handleSelectBreakActivity = (activity: BreakActivity) => {
@@ -772,9 +855,13 @@ const Dashboard: React.FC = () => {
                 <AnalysisPage
                     tasks={tasks}
                     blocks={blocks}
+                    blockSchedules={blockSchedules}
                     onCreateBlock={handleCreateBlock}
                     onUpdateBlock={handleUpdateBlock}
                     onDeleteBlock={handleDeleteBlock}
+                    onCreateSchedule={handleCreateSchedule}
+                    onUpdateSchedule={handleUpdateSchedule}
+                    onDeleteSchedule={handleDeleteSchedule}
                     onBack={() => setCurrentView('dashboard')}
                 />
             ) : (
@@ -791,6 +878,7 @@ const Dashboard: React.FC = () => {
                     onSaveGoal={handleSaveGoal}
                     onSaveGoalImage={handleSaveGoalImage}
                     blocks={blocks}
+                    onStartBreak={handleStartUnscheduledBreak}
                 />
             )}
         </div>

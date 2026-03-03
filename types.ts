@@ -6,6 +6,13 @@ export interface Block {
   icon?: string;
 }
 
+export interface BlockSchedule {
+  id: string;
+  blockId: string;
+  startTime: string; // HH:mm format e.g. "17:00"
+  endTime: string;   // HH:mm format e.g. "19:00"
+}
+
 export interface Task {
   id: string;
   title: string;

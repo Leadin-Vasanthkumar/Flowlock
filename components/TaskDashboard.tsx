@@ -18,6 +18,7 @@ interface TaskDashboardProps {
     goals: GoalData;
     onSaveGoal: (type: 'year' | 'month' | 'week' | 'day', content: string) => Promise<void>;
     onSaveGoalImage: (type: 'year' | 'month' | 'week' | 'day', imageUrl: string | null) => Promise<void>;
+    onStartBreak?: () => void;
 }
 
 const formatDuration = (totalSeconds: number): string => {
@@ -60,6 +61,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
     onSaveGoal,
     onSaveGoalImage,
     blocks,
+    onStartBreak,
 }) => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -99,9 +101,37 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                 </div>
 
                 {/* Header */}
-                <div className="mb-10">
-                    <p className="text-slate-500 text-sm font-medium mb-1">{dateStr}</p>
-                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">{greeting}</h1>
+                <div className="mb-10 flex items-end justify-between">
+                    <div>
+                        <p className="text-slate-500 text-sm font-medium mb-1">{dateStr}</p>
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">{greeting}</h1>
+                    </div>
+                    {onStartBreak && (
+                        <button
+                            onClick={onStartBreak}
+                            className="group flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer"
+                            style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                color: 'rgba(255,255,255,0.7)'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                            }}
+                        >
+                            <svg className="w-4 h-4 text-[#a855f7] opacity-70 group-hover:opacity-100 transition-opacity shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Take a Break
+                        </button>
+                    )}
                 </div>
 
                 {/* Add Task Button / Form */}
