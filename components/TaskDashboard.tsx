@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task } from '../types';
+import { Task, Block } from '../types';
 import AddTaskForm from './AddTaskForm';
 import EditTaskForm from './EditTaskForm';
 import GoalsPanel, { GoalData } from './GoalsPanel';
@@ -9,8 +9,9 @@ interface TaskDashboardProps {
     tasks: Task[];
     activeTaskId: string | null;
     onPlayTask: (id: string) => void;
-    onAddTask: (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; }) => Promise<void>;
-    onEditTask: (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string }) => Promise<void>;
+    onAddTask: (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; blockId?: string; }) => Promise<void>;
+    onEditTask: (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; blockId?: string }) => Promise<void>;
+    blocks: Block[];
     onDeleteTask: (id: string) => void;
     onToggleComplete: (id: string) => void;
     loading?: boolean;
@@ -58,6 +59,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
     goals,
     onSaveGoal,
     onSaveGoalImage,
+    blocks,
 }) => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -68,7 +70,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
     const pendingTasks = tasks.filter(t => !t.completed);
     const completedTasks = tasks.filter(t => t.completed);
 
-    const handleAdd = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; }) => {
+    const handleAdd = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; blockId?: string; }) => {
         setCreating(true);
         await onAddTask(data);
         setCreating(false);
@@ -119,7 +121,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                             }}
                         >
                             <h3 className="text-lg font-semibold text-white mb-5">New Task</h3>
-                            <AddTaskForm onSubmit={handleAdd} onCancel={() => setShowAddForm(false)} loading={creating} />
+                            <AddTaskForm onSubmit={handleAdd} onCancel={() => setShowAddForm(false)} loading={creating} blocks={blocks} />
                         </motion.div>
                     ) : (
                         <motion.button
@@ -195,6 +197,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                     setEditingTaskId(null);
                                                 }}
                                                 onCancel={() => setEditingTaskId(null)}
+                                                blocks={blocks}
                                             />
                                         </div>
                                     ) : (
@@ -237,6 +240,20 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                                                             </svg>
                                                             {formatScheduledTime(task.scheduledAt)}
+                                                        </span>
+                                                    )}
+                                                    {/* Block tag */}
+                                                    {task.blockName && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+                                                            style={{
+                                                                background: `${task.blockColor || '#5272c6'}20`,
+                                                                color: task.blockColor || '#5272c6',
+                                                                border: `1px solid ${task.blockColor || '#5272c6'}40`,
+                                                            }}
+                                                        >
+                                                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: task.blockColor || '#5272c6' }} />
+                                                            {task.blockName}
                                                         </span>
                                                     )}
                                                 </div>

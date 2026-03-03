@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task } from '../types';
+import { Task, Block } from '../types';
 
 interface EditTaskFormProps {
     task: Task;
@@ -9,12 +9,14 @@ interface EditTaskFormProps {
         location?: string;
         purpose?: string;
         scheduledAt?: string;
+        blockId?: string;
     }) => void;
     onCancel: () => void;
     saving?: boolean;
+    blocks?: Block[];
 }
 
-const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, saving }) => {
+const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, saving, blocks = [] }) => {
     const [title, setTitle] = useState(task.title);
     const initialHours = Math.floor(task.estimatedSeconds / 3600);
     const initialMinutes = Math.floor((task.estimatedSeconds % 3600) / 60);
@@ -22,6 +24,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
     const [minutes, setMinutes] = useState<string | number>(task.estimatedSeconds > 0 ? initialMinutes : '');
     const [location, setLocation] = useState(task.location || '');
     const [purpose, setPurpose] = useState(task.purpose || '');
+    const [selectedBlockId, setSelectedBlockId] = useState<string | undefined>(task.blockId);
 
     // Initialize schedule from existing task
     const existingDate = task.scheduledAt ? new Date(task.scheduledAt) : null;
@@ -71,6 +74,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
             location: location.trim() || undefined,
             purpose: purpose.trim() || undefined,
             scheduledAt: getScheduledISO(),
+            blockId: selectedBlockId,
         });
     };
 
@@ -506,6 +510,39 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
                     onBlur={blurHandler}
                 />
             </div>
+
+            {/* Block Selector */}
+            {blocks.length > 0 && (
+                <div>
+                    <label className="block text-slate-300 text-xs font-medium mb-1.5">
+                        Block <span className="text-slate-600 font-normal">optional</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                        {blocks.map(block => {
+                            const isSelected = selectedBlockId === block.id;
+                            return (
+                                <button
+                                    key={block.id}
+                                    type="button"
+                                    onClick={() => setSelectedBlockId(isSelected ? undefined : block.id)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 cursor-pointer"
+                                    style={{
+                                        background: isSelected ? `${block.color}25` : 'rgba(255,255,255,0.04)',
+                                        border: isSelected ? `1px solid ${block.color}60` : '1px solid rgba(255,255,255,0.08)',
+                                        color: isSelected ? block.color : 'rgba(255,255,255,0.6)',
+                                    }}
+                                >
+                                    <span
+                                        className="w-2 h-2 rounded-full flex-shrink-0"
+                                        style={{ background: block.color, opacity: isSelected ? 1 : 0.5 }}
+                                    />
+                                    {block.name}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-2 pt-1">

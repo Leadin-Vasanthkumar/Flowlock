@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Block } from '../types';
 
 interface AddTaskFormProps {
     onSubmit: (data: {
@@ -9,17 +10,20 @@ interface AddTaskFormProps {
         scheduledAt?: string;
         repeatType: 'none' | 'daily' | 'weekly';
         repeatDayOfWeek?: number;
+        blockId?: string;
     }) => void;
     onCancel: () => void;
     loading?: boolean;
+    blocks?: Block[];
 }
 
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading, blocks = [] }) => {
     const [title, setTitle] = useState('');
     const [hours, setHours] = useState<string | number>('');
     const [minutes, setMinutes] = useState<string | number>('');
     const [location, setLocation] = useState('');
     const [purpose, setPurpose] = useState('');
+    const [selectedBlockId, setSelectedBlockId] = useState<string | undefined>(undefined);
     const [schedHour, setSchedHour] = useState<string | number>('');
     const [schedMinute, setSchedMinute] = useState<string | number>('');
     const [schedPeriod, setSchedPeriod] = useState<'AM' | 'PM' | ''>('');
@@ -88,6 +92,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }
             scheduledAt: getScheduledISO(),
             repeatType: repeatType,
             repeatDayOfWeek: repeatType === 'weekly' ? new Date().getDay() : undefined,
+            blockId: selectedBlockId,
         });
     };
 
@@ -653,6 +658,39 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }
                     </>
                 )}
             </div>
+
+            {/* Block Selector */}
+            {blocks.length > 0 && (
+                <div>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">
+                        Block <span className="text-slate-600 font-normal ml-1.5">optional</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                        {blocks.map(block => {
+                            const isSelected = selectedBlockId === block.id;
+                            return (
+                                <button
+                                    key={block.id}
+                                    type="button"
+                                    onClick={() => setSelectedBlockId(isSelected ? undefined : block.id)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer"
+                                    style={{
+                                        background: isSelected ? `${block.color}25` : 'rgba(255,255,255,0.04)',
+                                        border: isSelected ? `1px solid ${block.color}60` : '1px solid rgba(255,255,255,0.08)',
+                                        color: isSelected ? block.color : 'rgba(255,255,255,0.6)',
+                                    }}
+                                >
+                                    <span
+                                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                        style={{ background: block.color, opacity: isSelected ? 1 : 0.5 }}
+                                    />
+                                    {block.name}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Location */}
             <div>
