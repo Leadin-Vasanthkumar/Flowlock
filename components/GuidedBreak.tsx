@@ -23,6 +23,7 @@ interface GuidedBreakProps {
     onDone: () => void;
     onContinue: (taskId: string) => void;
     onBack: () => void;
+    onBackToOptions: () => void;
 }
 
 const formatBreakTime = (s: number) => {
@@ -534,6 +535,7 @@ const GuidedBreak: React.FC<GuidedBreakProps> = ({
     onDone,
     onContinue,
     onBack,
+    onBackToOptions,
 }) => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
@@ -550,6 +552,21 @@ const GuidedBreak: React.FC<GuidedBreakProps> = ({
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
                         <span>Dashboard</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Back to Options - Top Left (during active break) */}
+            {phase === 'active' && (
+                <div className="absolute top-4 left-4 sm:top-6 sm:left-6 md:top-10 md:left-12 z-[110]">
+                    <button
+                        onClick={onBackToOptions}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/5 transition-all text-xs uppercase tracking-widest text-white/40 hover:text-white cursor-pointer"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Back</span>
                     </button>
                 </div>
             )}

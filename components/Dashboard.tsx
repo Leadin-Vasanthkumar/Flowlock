@@ -840,6 +840,7 @@ const Dashboard: React.FC = () => {
                     onDone={handleBreakDone}
                     onContinue={handleBreakContinue}
                     onBack={() => setCurrentView('dashboard')}
+                    onBackToOptions={() => setBreakPhase('select')}
                 />
             ) : currentView === 'timer' ? (
                 <TimerView
