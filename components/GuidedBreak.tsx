@@ -174,7 +174,7 @@ const SelectPhase: React.FC<{ onSelect: (a: BreakActivity) => void }> = ({ onSel
             <p className="text-sm text-white/40">Pick an activity for a quick neural reset</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-5 w-full max-w-4xl mt-4">
+        <div className="flex flex-col sm:flex-row gap-5 w-full max-w-7xl mt-4 px-4 sm:px-8">
             {activities.map((a, i) => (
                 <motion.div
                     key={a.id}
