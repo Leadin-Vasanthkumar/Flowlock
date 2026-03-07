@@ -4,12 +4,13 @@ import { motion, Variants, AnimatePresence } from 'framer-motion';
 interface WalkingResetAnimationProps {
     seconds: number;
     onSkip: () => void;
+    onTimerReset?: () => void;
 }
 
 const guidelines = [
     {
         icon: (
-            <svg className="w-6 h-6 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
             </svg>
@@ -19,7 +20,7 @@ const guidelines = [
     },
     {
         icon: (
-            <svg className="w-6 h-6 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -29,7 +30,7 @@ const guidelines = [
     },
     {
         icon: (
-            <svg className="w-6 h-6 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
             </svg>
         ),
@@ -142,7 +143,7 @@ const ActiveTimerScreen: React.FC<{ seconds: number; onSkip: () => void }> = ({ 
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
-    const totalDuration = 300;
+    const totalDuration = 600;
     const progress = Math.max(0, Math.min(1, 1 - seconds / totalDuration));
 
     return (
@@ -177,12 +178,12 @@ const ActiveTimerScreen: React.FC<{ seconds: number; onSkip: () => void }> = ({ 
                     <span className="text-sm font-semibold text-green-400 uppercase tracking-wider">Walking Reset</span>
                 </div>
 
-                <div className="text-[5rem] sm:text-[6rem] font-bold tracking-tighter text-white/90 drop-shadow-[0_0_30px_rgba(34,197,94,0.15)] tabular-nums leading-none">
+                <div className="text-[8rem] sm:text-[10rem] font-bold tracking-tighter text-white/90 drop-shadow-[0_0_40px_rgba(34,197,94,0.2)] tabular-nums leading-none">
                     {timeStr}
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-48 h-1.5 rounded-full bg-white/5 overflow-hidden mt-2">
+                <div className="w-64 h-1.5 rounded-full bg-white/5 overflow-hidden mt-4">
                     <div
                         className="h-full rounded-full transition-all duration-1000 ease-linear"
                         style={{
@@ -192,80 +193,6 @@ const ActiveTimerScreen: React.FC<{ seconds: number; onSkip: () => void }> = ({ 
                     />
                 </div>
             </div>
-
-            {/* Bilateral Pulse Animation */}
-            <div className="relative z-10 w-full flex items-center justify-center" style={{ height: '120px' }}>
-                {/* Track line */}
-                <div
-                    className="absolute w-3/4 h-[1px]"
-                    style={{ background: 'rgba(34,197,94,0.15)' }}
-                />
-
-                {/* Left dot marker */}
-                <div
-                    className="absolute rounded-full"
-                    style={{
-                        width: 8,
-                        height: 8,
-                        left: '12.5%',
-                        background: 'rgba(34,197,94,0.3)',
-                    }}
-                />
-
-                {/* Right dot marker */}
-                <div
-                    className="absolute rounded-full"
-                    style={{
-                        width: 8,
-                        height: 8,
-                        right: '12.5%',
-                        background: 'rgba(34,197,94,0.3)',
-                    }}
-                />
-
-                {/* Moving pulse orb */}
-                <motion.div
-                    className="absolute rounded-full"
-                    style={{
-                        width: 40,
-                        height: 40,
-                        background: 'radial-gradient(circle, rgba(34,197,94,0.6) 0%, rgba(34,197,94,0.1) 70%)',
-                        boxShadow: '0 0 40px rgba(34,197,94,0.3), 0 0 80px rgba(34,197,94,0.1)',
-                    }}
-                    animate={{
-                        x: ['-150px', '150px', '-150px'],
-                    }}
-                    transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                    }}
-                />
-
-                {/* Secondary trailing orb */}
-                <motion.div
-                    className="absolute rounded-full"
-                    style={{
-                        width: 20,
-                        height: 20,
-                        background: 'radial-gradient(circle, rgba(34,197,94,0.3) 0%, transparent 70%)',
-                    }}
-                    animate={{
-                        x: ['-150px', '150px', '-150px'],
-                    }}
-                    transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                        delay: 0.15,
-                    }}
-                />
-            </div>
-
-            {/* Cue text */}
-            <p className="relative z-10 text-white/30 text-sm italic">
-                Left… Right… Left… match your steps to the rhythm
-            </p>
 
             {/* Skip button */}
             <button
@@ -279,13 +206,18 @@ const ActiveTimerScreen: React.FC<{ seconds: number; onSkip: () => void }> = ({ 
 };
 
 // ── Main Component ────────────────────────────────────────
-const WalkingResetAnimation: React.FC<WalkingResetAnimationProps> = ({ seconds, onSkip }) => {
+const WalkingResetAnimation: React.FC<WalkingResetAnimationProps> = ({ seconds, onSkip, onTimerReset }) => {
     const [started, setStarted] = useState(false);
+
+    const handleStart = () => {
+        if (onTimerReset) onTimerReset();
+        setStarted(true);
+    };
 
     return (
         <AnimatePresence mode="wait">
             {!started ? (
-                <PreFlightScreen key="preflight" onStart={() => setStarted(true)} />
+                <PreFlightScreen key="preflight" onStart={handleStart} />
             ) : (
                 <ActiveTimerScreen key="active" seconds={seconds} onSkip={onSkip} />
             )}

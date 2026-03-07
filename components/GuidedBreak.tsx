@@ -24,6 +24,7 @@ interface GuidedBreakProps {
     onContinue: (taskId: string) => void;
     onBack: () => void;
     onBackToOptions: () => void;
+    onTimerReset?: () => void;
 }
 
 const formatBreakTime = (s: number) => {
@@ -230,7 +231,8 @@ const ActivePhase: React.FC<{
     activity: BreakActivity | null;
     seconds: number;
     onSkip: () => void;
-}> = ({ activity, seconds, onSkip }) => {
+    onTimerReset?: () => void;
+}> = ({ activity, seconds, onSkip, onTimerReset }) => {
     // For breathing, use the dedicated animation component
     if (activity === 'breathing') {
         return <BoxBreathingAnimation seconds={seconds} onSkip={onSkip} />;
@@ -253,7 +255,7 @@ const ActivePhase: React.FC<{
 
     // For walking, use the bilateral stimulation Walking Reset component
     if (activity === 'walking') {
-        return <WalkingResetAnimation seconds={seconds} onSkip={onSkip} />;
+        return <WalkingResetAnimation seconds={seconds} onSkip={onSkip} onTimerReset={onTimerReset} />;
     }
 
     return null; // Fallback should never hit if activities are properly defined
@@ -536,6 +538,7 @@ const GuidedBreak: React.FC<GuidedBreakProps> = ({
     onContinue,
     onBack,
     onBackToOptions,
+    onTimerReset,
 }) => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
@@ -579,7 +582,7 @@ const GuidedBreak: React.FC<GuidedBreakProps> = ({
                     <SelectPhase key="select" onSelect={onSelectActivity} />
                 )}
                 {phase === 'active' && (
-                    <ActivePhase key="active" activity={breakActivity} seconds={breakSeconds} onSkip={onSkipBreak} />
+                    <ActivePhase key="active" activity={breakActivity} seconds={breakSeconds} onSkip={onSkipBreak} onTimerReset={onTimerReset} />
                 )}
                 {phase === 'decision' && (
                     <DecisionPhase key="decision" remainingTasks={remainingTasks} onDone={onDone} onContinue={onContinue} />

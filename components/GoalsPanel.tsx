@@ -355,7 +355,7 @@ const GoalsPanel: React.FC<GoalsPanelProps> = ({ goals, onSaveGoal, onSaveGoalIm
     };
 
     return (
-        <div className="flex flex-col gap-3 h-full pt-6 sm:pt-8 pb-8 sm:pb-12 px-4 sm:px-6 md:px-8">
+        <div className="flex flex-col gap-3 h-full pt-24 lg:pt-28 pb-8 sm:pb-12 px-4 sm:px-6 md:px-8">
             {/* Section title */}
             <div className="mb-1">
                 <h2 className="text-lg font-bold text-white tracking-tight">Goals</h2>

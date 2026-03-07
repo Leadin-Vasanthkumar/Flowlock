@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task, Block } from '../types';
+import { Task } from '../types';
 import AddTaskForm from './AddTaskForm';
 import EditTaskForm from './EditTaskForm';
 import GoalsPanel, { GoalData } from './GoalsPanel';
@@ -9,9 +9,8 @@ interface TaskDashboardProps {
     tasks: Task[];
     activeTaskId: string | null;
     onPlayTask: (id: string) => void;
-    onAddTask: (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; blockId?: string; }) => Promise<void>;
-    onEditTask: (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; blockId?: string }) => Promise<void>;
-    blocks: Block[];
+    onAddTask: (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; }) => Promise<void>;
+    onEditTask: (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string }) => Promise<void>;
     onDeleteTask: (id: string) => void;
     onToggleComplete: (id: string) => void;
     loading?: boolean;
@@ -60,7 +59,6 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
     goals,
     onSaveGoal,
     onSaveGoalImage,
-    blocks,
     onStartBreak,
 }) => {
     const [showAddForm, setShowAddForm] = useState(false);
@@ -84,21 +82,10 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
     const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     return (
-        <div className="relative h-full w-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+        <div className="relative h-full w-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden pt-0">
 
             {/* Left Column: Tasks */}
-            <div className="flex flex-col px-4 sm:px-6 md:px-12 pt-6 sm:pt-8 pb-8 sm:pb-12 overflow-y-auto">
-
-                {/* Logo & Beta Marker */}
-                <div className="flex items-center gap-2 mb-8">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7f19e6, #a855f7)' }}>
-                        <svg width="18" height="18" fill="white" viewBox="0 0 48 48"><path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" /></svg>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-base font-bold tracking-tight text-white">Flowlock</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest text-[#a855f7] uppercase" style={{ background: 'rgba(127,25,230,0.15)', border: '1px solid rgba(127,25,230,0.3)' }}>Beta</span>
-                    </div>
-                </div>
+            <div className="flex flex-col px-4 sm:px-6 md:px-12 pt-24 sm:pt-28 pb-8 sm:pb-12 overflow-y-auto">
 
                 {/* Header */}
                 <div className="mb-10 flex items-end justify-between">
@@ -151,7 +138,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                             }}
                         >
                             <h3 className="text-lg font-semibold text-white mb-5">New Task</h3>
-                            <AddTaskForm onSubmit={handleAdd} onCancel={() => setShowAddForm(false)} loading={creating} blocks={blocks} />
+                            <AddTaskForm onSubmit={handleAdd} onCancel={() => setShowAddForm(false)} loading={creating} />
                         </motion.div>
                     ) : (
                         <motion.button
@@ -227,7 +214,7 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                     setEditingTaskId(null);
                                                 }}
                                                 onCancel={() => setEditingTaskId(null)}
-                                                blocks={blocks}
+
                                             />
                                         </div>
                                     ) : (
@@ -270,20 +257,6 @@ const TaskDashboard: React.FC<TaskDashboardProps> = ({
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                                                             </svg>
                                                             {formatScheduledTime(task.scheduledAt)}
-                                                        </span>
-                                                    )}
-                                                    {/* Block tag */}
-                                                    {task.blockName && (
-                                                        <span
-                                                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
-                                                            style={{
-                                                                background: `${task.blockColor || '#5272c6'}20`,
-                                                                color: task.blockColor || '#5272c6',
-                                                                border: `1px solid ${task.blockColor || '#5272c6'}40`,
-                                                            }}
-                                                        >
-                                                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: task.blockColor || '#5272c6' }} />
-                                                            {task.blockName}
                                                         </span>
                                                     )}
                                                 </div>

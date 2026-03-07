@@ -5,7 +5,7 @@ import GuidedBreak, { BreakPhase, BreakActivity } from './GuidedBreak';
 import AnalysisPage from './AnalysisPage';
 import UserProfileMenu from './UserProfileMenu';
 import { GoalData } from './GoalsPanel';
-import { Task, Block, BlockSchedule, TimerStatus } from '../types';
+import { Task, TimerStatus } from '../types';
 import { supabase } from '../lib/supabase';
 
 type ViewType = 'dashboard' | 'timer' | 'guided-break' | 'analysis';
@@ -18,8 +18,7 @@ const Dashboard: React.FC = () => {
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
     const [loading, setLoading] = useState(true);
     const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', day: '', yearImage: undefined, monthImage: undefined, weekImage: undefined, dayImage: undefined });
-    const [blocks, setBlocks] = useState<Block[]>([]);
-    const [blockSchedules, setBlockSchedules] = useState<BlockSchedule[]>([]);
+
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const endTimeRef = useRef<number>(0);
@@ -37,8 +36,6 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         fetchTasks();
         fetchGoals();
-        fetchBlocks();
-        fetchBlockSchedules();
     }, []);
 
     const fetchTasks = async () => {
@@ -175,174 +172,6 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const fetchBlocks = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data, error } = await supabase
-                .from('blocks')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('inserted_at', { ascending: true });
-            if (error) throw error;
-
-            if (data && data.length > 0) {
-                setBlocks(data.map(b => ({
-                    id: b.id,
-                    name: b.name,
-                    color: b.color,
-                    icon: b.icon || undefined,
-                })));
-            } else {
-                // Seed default blocks for new users
-                const defaults = [
-                    { name: 'Study', color: '#5272c6', user_id: user.id },
-                    { name: 'Work', color: '#a855f7', user_id: user.id },
-                    { name: 'Fitness', color: '#10b981', user_id: user.id },
-                    { name: 'Personal', color: '#f59e0b', user_id: user.id },
-                    { name: 'Creative', color: '#ec4899', user_id: user.id },
-                ];
-                const { data: seeded, error: seedErr } = await supabase
-                    .from('blocks')
-                    .insert(defaults)
-                    .select();
-                if (seedErr) throw seedErr;
-                if (seeded) {
-                    setBlocks(seeded.map(b => ({
-                        id: b.id,
-                        name: b.name,
-                        color: b.color,
-                        icon: b.icon || undefined,
-                    })));
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching blocks:', error);
-        }
-    };
-
-    const handleCreateBlock = async (name: string, color: string) => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data, error } = await supabase
-                .from('blocks')
-                .insert({ user_id: user.id, name, color })
-                .select()
-                .single();
-            if (error) throw error;
-            if (data) {
-                setBlocks(prev => [...prev, { id: data.id, name: data.name, color: data.color, icon: data.icon || undefined }]);
-            }
-        } catch (error) {
-            console.error('Error creating block:', error);
-        }
-    };
-
-    const handleUpdateBlock = async (id: string, name: string, color: string) => {
-        try {
-            const { error } = await supabase
-                .from('blocks')
-                .update({ name, color })
-                .eq('id', id);
-            if (error) throw error;
-            setBlocks(prev => prev.map(b => b.id === id ? { ...b, name, color } : b));
-            // Also update tasks that reference this block
-            setTasks(prev => prev.map(t => t.blockId === id ? { ...t, blockName: name, blockColor: color } : t));
-        } catch (error) {
-            console.error('Error updating block:', error);
-        }
-    };
-
-    const handleDeleteBlock = async (id: string) => {
-        try {
-            const { error } = await supabase
-                .from('blocks')
-                .delete()
-                .eq('id', id);
-            if (error) throw error;
-            setBlocks(prev => prev.filter(b => b.id !== id));
-            // Clear block from tasks that referenced it
-            setTasks(prev => prev.map(t => t.blockId === id ? { ...t, blockId: undefined, blockName: undefined, blockColor: undefined } : t));
-        } catch (error) {
-            console.error('Error deleting block:', error);
-        }
-    };
-
-    // ─── Block Schedule CRUD ─────────────────────────────────
-    const fetchBlockSchedules = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data, error } = await supabase
-                .from('block_schedules')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('start_time', { ascending: true });
-            if (error) throw error;
-            if (data) {
-                setBlockSchedules(data.map(s => ({
-                    id: s.id,
-                    blockId: s.block_id,
-                    startTime: s.start_time?.substring(0, 5) || '',
-                    endTime: s.end_time?.substring(0, 5) || '',
-                })));
-            }
-        } catch (error) {
-            console.error('Error fetching block schedules:', error);
-        }
-    };
-
-    const handleCreateSchedule = async (blockId: string, startTime: string, endTime: string) => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data, error } = await supabase
-                .from('block_schedules')
-                .insert({ user_id: user.id, block_id: blockId, start_time: startTime, end_time: endTime })
-                .select()
-                .single();
-            if (error) throw error;
-            if (data) {
-                setBlockSchedules(prev => [...prev, {
-                    id: data.id,
-                    blockId: data.block_id,
-                    startTime: data.start_time?.substring(0, 5) || '',
-                    endTime: data.end_time?.substring(0, 5) || '',
-                }].sort((a, b) => a.startTime.localeCompare(b.startTime)));
-            }
-        } catch (error) {
-            console.error('Error creating schedule:', error);
-        }
-    };
-
-    const handleUpdateSchedule = async (id: string, blockId: string, startTime: string, endTime: string) => {
-        try {
-            const { error } = await supabase
-                .from('block_schedules')
-                .update({ block_id: blockId, start_time: startTime, end_time: endTime })
-                .eq('id', id);
-            if (error) throw error;
-            setBlockSchedules(prev => prev
-                .map(s => s.id === id ? { ...s, blockId, startTime, endTime } : s)
-                .sort((a, b) => a.startTime.localeCompare(b.startTime)));
-        } catch (error) {
-            console.error('Error updating schedule:', error);
-        }
-    };
-
-    const handleDeleteSchedule = async (id: string) => {
-        try {
-            const { error } = await supabase
-                .from('block_schedules')
-                .delete()
-                .eq('id', id);
-            if (error) throw error;
-            setBlockSchedules(prev => prev.filter(s => s.id !== id));
-        } catch (error) {
-            console.error('Error deleting schedule:', error);
-        }
-    };
 
     const handleSaveGoal = async (type: 'year' | 'month' | 'week' | 'day', content: string) => {
         try {
@@ -386,7 +215,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const createTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; blockId?: string }) => {
+    const createTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
@@ -406,7 +235,6 @@ const Dashboard: React.FC = () => {
                         repeat_type: data.repeatType,
                         repeat_day_of_week: data.repeatDayOfWeek,
                         last_generated_date: new Date().toISOString().split('T')[0],
-                        block_id: data.blockId || null,
                     })
                     .select()
                     .single();
@@ -428,14 +256,11 @@ const Dashboard: React.FC = () => {
                     purpose: data.purpose || null,
                     scheduled_at: data.scheduledAt || null,
                     habit_id: habitId,
-                    block_id: data.blockId || null,
                 })
                 .select()
                 .single();
 
             if (error) throw error;
-            // Look up block info
-            const block = data.blockId ? blocks.find(b => b.id === data.blockId) : null;
             return row ? {
                 id: row.id,
                 title: row.task,
@@ -446,9 +271,6 @@ const Dashboard: React.FC = () => {
                 purpose: row.purpose || undefined,
                 scheduledAt: row.scheduled_at || undefined,
                 habitId: row.habit_id || undefined,
-                blockId: row.block_id || undefined,
-                blockName: block?.name || undefined,
-                blockColor: block?.color || undefined,
             } as Task : null;
         } catch (error) {
             console.error('Error creating task:', error);
@@ -566,7 +388,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleAddTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; blockId?: string }) => {
+    const handleAddTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number }) => {
         const newTask = await createTask(data);
         if (!newTask) return;
         setTasks(prev => [...prev, newTask]);
@@ -580,10 +402,8 @@ const Dashboard: React.FC = () => {
                 location: data.location || null,
                 purpose: data.purpose || null,
                 scheduled_at: data.scheduledAt || null,
-                block_id: data.blockId || null,
             }).eq('id', id);
             if (error) throw error;
-            const block = data.blockId ? blocks.find(b => b.id === data.blockId) : null;
             setTasks(prev => prev.map(t => t.id === id ? {
                 ...t,
                 title: data.title,
@@ -591,9 +411,6 @@ const Dashboard: React.FC = () => {
                 location: data.location,
                 purpose: data.purpose,
                 scheduledAt: data.scheduledAt,
-                blockId: data.blockId,
-                blockName: block?.name || undefined,
-                blockColor: block?.color || undefined,
             } : t));
         } catch (error) {
             console.error('Error editing task:', error);
@@ -716,10 +533,10 @@ const Dashboard: React.FC = () => {
 
     useEffect(() => {
         if (currentView === 'guided-break' && breakPhase === 'active') {
-            breakEndTimeRef.current = Date.now() + breakSeconds * 1000;
+            breakEndTimeRef.current = Date.now() + breakSeconds * 1000 + 100;
 
             const tick = () => {
-                const remaining = Math.ceil((breakEndTimeRef.current - Date.now()) / 1000);
+                const remaining = Math.round((breakEndTimeRef.current - Date.now()) / 1000);
                 if (remaining <= 0) {
                     setBreakSeconds(0);
                     const hasTasks = tasks.some(t => !t.completed && t.estimatedSeconds > 0);
@@ -775,7 +592,7 @@ const Dashboard: React.FC = () => {
 
     const handleSelectBreakActivity = (activity: BreakActivity) => {
         setBreakActivity(activity);
-        setBreakSeconds(activity === 'stretches' ? 120 : 300);
+        setBreakSeconds(activity === 'stretches' ? 120 : activity === 'walking' ? 600 : 300);
         setBreakPhase('active');
     };
 
@@ -796,35 +613,49 @@ const Dashboard: React.FC = () => {
     return (
         <div className="relative h-screen w-full bg-[#0d0814] text-white overflow-hidden select-none">
 
-            {/* Top Bar — Analysis Button + User Profile */}
-            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
-                {(currentView === 'dashboard' || currentView === 'analysis') && (
-                    <button
-                        onClick={() => setCurrentView(currentView === 'analysis' ? 'dashboard' : 'analysis')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer"
-                        style={{
-                            background: currentView === 'analysis' ? 'rgba(82, 114, 198, 0.3)' : 'rgba(255,255,255,0.08)',
-                            border: currentView === 'analysis' ? '1px solid rgba(82, 114, 198, 0.5)' : '1px solid rgba(255,255,255,0.1)',
-                            color: currentView === 'analysis' ? '#9aaddd' : 'rgba(255,255,255,0.7)',
-                        }}
-                        aria-label={currentView === 'analysis' ? 'Back to tasks' : 'View analysis'}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            {currentView === 'analysis' ? (
-                                <>
-                                    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-                                </>
-                            ) : (
-                                <>
-                                    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-                                </>
-                            )}
-                        </svg>
-                        {currentView === 'analysis' ? 'Tasks' : 'Analysis'}
-                    </button>
-                )}
-                <UserProfileMenu />
-            </div>
+            {/* Top Floating Icons */}
+            {(currentView === 'dashboard' || currentView === 'analysis') && (
+                <>
+                    {/* Left — Flowlock Branding */}
+                    <div className="absolute top-6 left-4 sm:top-8 sm:left-6 lg:top-10 lg:left-12 z-50 flex items-center gap-3 pointer-events-auto">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7f19e6, #a855f7)' }}>
+                            <svg width="22" height="22" fill="white" viewBox="0 0 48 48"><path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" /></svg>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-xl font-bold tracking-tight text-white shadow-sm">Flowlock</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest text-[#a855f7] uppercase shadow-sm" style={{ background: 'rgba(127,25,230,0.15)', border: '1px solid rgba(127,25,230,0.3)' }}>Beta</span>
+                        </div>
+                    </div>
+
+                    {/* Right — Toggle + Profile */}
+                    <div className="absolute top-6 right-4 sm:top-8 sm:right-6 lg:top-10 lg:right-12 z-50 flex items-center gap-2 pointer-events-auto">
+                        <button
+                            onClick={() => setCurrentView(currentView === 'analysis' ? 'dashboard' : 'analysis')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer"
+                            style={{
+                                background: currentView === 'analysis' ? 'rgba(82, 114, 198, 0.3)' : 'rgba(255,255,255,0.08)',
+                                border: currentView === 'analysis' ? '1px solid rgba(82, 114, 198, 0.5)' : '1px solid rgba(255,255,255,0.1)',
+                                color: currentView === 'analysis' ? '#9aaddd' : 'rgba(255,255,255,0.7)',
+                            }}
+                            aria-label={currentView === 'analysis' ? 'Back to tasks' : 'View analysis'}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                {currentView === 'analysis' ? (
+                                    <>
+                                        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                                    </>
+                                )}
+                            </svg>
+                            {currentView === 'analysis' ? 'Tasks' : 'Analysis'}
+                        </button>
+                        <UserProfileMenu />
+                    </div>
+                </>
+            )}
 
             {/* View Rendering */}
             {currentView === 'guided-break' ? (
@@ -841,6 +672,11 @@ const Dashboard: React.FC = () => {
                     onContinue={handleBreakContinue}
                     onBack={() => setCurrentView('dashboard')}
                     onBackToOptions={() => setBreakPhase('select')}
+                    onTimerReset={() => {
+                        const duration = breakActivity === 'walking' ? 600 : breakActivity === 'stretches' ? 120 : 300;
+                        setBreakSeconds(duration);
+                        breakEndTimeRef.current = Date.now() + duration * 1000 + 100;
+                    }}
                 />
             ) : currentView === 'timer' ? (
                 <TimerView
@@ -856,14 +692,6 @@ const Dashboard: React.FC = () => {
             ) : currentView === 'analysis' ? (
                 <AnalysisPage
                     tasks={tasks}
-                    blocks={blocks}
-                    blockSchedules={blockSchedules}
-                    onCreateBlock={handleCreateBlock}
-                    onUpdateBlock={handleUpdateBlock}
-                    onDeleteBlock={handleDeleteBlock}
-                    onCreateSchedule={handleCreateSchedule}
-                    onUpdateSchedule={handleUpdateSchedule}
-                    onDeleteSchedule={handleDeleteSchedule}
                     onBack={() => setCurrentView('dashboard')}
                 />
             ) : (
@@ -879,7 +707,6 @@ const Dashboard: React.FC = () => {
                     goals={goals}
                     onSaveGoal={handleSaveGoal}
                     onSaveGoalImage={handleSaveGoalImage}
-                    blocks={blocks}
                     onStartBreak={handleStartUnscheduledBreak}
                 />
             )}
