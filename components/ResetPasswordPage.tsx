@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { motion } from 'framer-motion';
-import Orb from './Orb';
+
 
 const ResetPasswordPage: React.FC = () => {
     const navigate = useNavigate();
@@ -58,11 +58,10 @@ const ResetPasswordPage: React.FC = () => {
     };
 
     return (
-        <div className="relative min-h-screen w-full bg-[#0d0814] text-slate-100 flex flex-col font-display overflow-hidden">
-            {/* ── Orb background ── */}
-            <div className="fixed inset-0 z-0 pointer-events-none" style={{ opacity: 0.85 }}>
-                <Orb hue={260} hoverIntensity={0.3} rotateOnHover backgroundColor="#0d0814" />
-            </div>
+        <div className="relative min-h-screen w-full bg-[#0D0E0D] text-slate-100 flex flex-col font-display overflow-hidden">
+            {/* ── Background Glow ── */}
+            <div className="fixed inset-0 z-0 radial-glow pointer-events-none opacity-50" />
+
 
             {/* Main Content */}
             <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 md:p-12">
@@ -74,12 +73,11 @@ const ResetPasswordPage: React.FC = () => {
                 >
                     {/* Logo & Header */}
                     <div className="flex flex-col items-center text-center mb-10">
-                        <div className="w-12 h-12 bg-[#7f19e6] rounded-xl flex items-center justify-center shadow-lg shadow-[#7f19e6]/20 mb-4">
-                            <svg className="w-7 h-7" fill="white" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd"></path>
-                            </svg>
+                        <div className="w-12 h-12 rounded-xl border border-white/10 mb-4 overflow-hidden shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                            <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Set new password</h1>
+
                         <p className="text-slate-400 text-sm">Create a new password for your account</p>
                     </div>
 
@@ -87,12 +85,13 @@ const ResetPasswordPage: React.FC = () => {
                         <div className="text-center py-6 flex flex-col items-center gap-5">
                             <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
                                 style={{
-                                    background: 'rgba(127,25,230,0.15)',
-                                    border: '1px solid rgba(127,25,230,0.3)',
+                                    background: 'rgba(34,197,94,0.15)',
+                                    border: '1px solid rgba(34,197,94,0.3)',
                                 }}>
-                                <svg className="w-7 h-7 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <svg className="w-7 h-7 text-[#22C55E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
+
                             </div>
                             <div className="space-y-1">
                                 <h3 className="text-lg font-semibold text-white">Password updated!</h3>
@@ -145,7 +144,8 @@ const ResetPasswordPage: React.FC = () => {
                             </div>
 
                             <button
-                                className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#7f19e6]/20 mt-4 disabled:opacity-50 flex items-center justify-center"
+                                className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#22C55E]/20 mt-4 disabled:opacity-50 flex items-center justify-center cursor-pointer"
+
                                 type="submit"
                                 disabled={loading || !password || !confirmPassword}
                             >

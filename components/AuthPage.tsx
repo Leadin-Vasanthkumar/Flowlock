@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { motion } from 'framer-motion';
-import Orb from './Orb';
+
 
 const AuthPage: React.FC = () => {
     const navigate = useNavigate();
@@ -80,11 +80,10 @@ const AuthPage: React.FC = () => {
     };
 
     return (
-        <div className="relative min-h-screen w-full bg-[#0d0814] text-slate-100 flex flex-col font-display overflow-hidden">
-            {/* ── Orb background ── */}
-            <div className="fixed inset-0 z-0 pointer-events-none" style={{ opacity: 0.85 }}>
-                <Orb hue={260} hoverIntensity={0.3} rotateOnHover backgroundColor="#0d0814" />
-            </div>
+        <div className="relative min-h-screen w-full bg-[#0D0E0D] text-slate-100 flex flex-col font-display overflow-hidden">
+            {/* ── Background Glow ── */}
+            <div className="fixed inset-0 z-0 radial-glow pointer-events-none opacity-50" />
+
 
             {/* Main Content */}
             <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 md:p-12">
@@ -111,10 +110,11 @@ const AuthPage: React.FC = () => {
                         <div className="text-center py-6 flex flex-col items-center gap-5">
                             <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
                                 style={{
-                                    background: 'rgba(127,25,230,0.15)',
-                                    border: '1px solid rgba(127,25,230,0.3)',
+                                    background: 'rgba(34,197,94,0.15)',
+                                    border: '1px solid rgba(34,197,94,0.3)',
                                 }}>
-                                <svg className="w-7 h-7 text-[#a78bfa]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <svg className="w-7 h-7 text-[#22C55E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                                 </svg>
                             </div>
@@ -154,7 +154,8 @@ const AuthPage: React.FC = () => {
                                 </div>
 
                                 <button
-                                    className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#7f19e6]/20 mt-2 disabled:opacity-50 flex items-center justify-center"
+                                    className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#22C55E]/20 mt-2 disabled:opacity-50 flex items-center justify-center cursor-pointer"
+
                                     type="submit"
                                     disabled={loading}
                                 >
@@ -196,7 +197,8 @@ const AuthPage: React.FC = () => {
                                 <div className="absolute inset-0 flex items-center">
                                     <div className="w-full border-t border-white/10"></div>
                                 </div>
-                                <span className="relative bg-[#1a1122] px-4 text-[10px] font-medium text-slate-500 uppercase tracking-[0.2em]">or sign in with email</span>
+                                <span className="relative bg-[#0D0E0D] px-4 text-[10px] font-medium text-slate-500 uppercase tracking-[0.2em]">or sign in with email</span>
+
                             </div>
 
                             {/* Login Form */}
@@ -245,14 +247,16 @@ const AuthPage: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => setForgotMode(true)}
-                                        className="text-xs text-slate-500 hover:text-[#a855f7] transition-colors"
+                                        className="text-xs text-slate-500 hover:text-[#22C55E] transition-colors cursor-pointer"
                                     >
                                         Forgot Password?
+
                                     </button>
                                 </div>
 
                                 <button
-                                    className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#7f19e6]/20 disabled:opacity-50 flex items-center justify-center"
+                                    className="w-full h-14 rounded-2xl btn-primary-gradient text-white font-bold text-base shadow-lg shadow-[#22C55E]/20 disabled:opacity-50 flex items-center justify-center cursor-pointer"
+
                                     type="submit"
                                     disabled={loading}
                                 >
@@ -269,7 +273,8 @@ const AuthPage: React.FC = () => {
                     <div className="mt-8 text-center">
                         <p className="text-sm text-slate-400">
                             Don't have an account?
-                            <button onClick={() => navigate('/signup')} className="text-white font-semibold hover:text-[#7f19e6] transition-colors ml-1">Sign Up</button>
+                            <button onClick={() => navigate('/signup')} className="text-white font-semibold hover:text-[#22C55E] transition-colors ml-1 cursor-pointer">Sign Up</button>
+
                         </p>
                     </div>
                 </motion.div>
@@ -284,10 +289,10 @@ const AuthPage: React.FC = () => {
 
             {/* Visual Accents */}
             <div className="fixed top-20 right-20 w-32 h-32 opacity-20 hidden lg:block">
-                <div className="absolute inset-0 glass-card rounded-3xl rotate-12 border-[#7f19e6]/20"></div>
+                <div className="absolute inset-0 glass-card rounded-3xl rotate-12 border-[#22C55E]/20"></div>
             </div>
             <div className="fixed bottom-20 left-20 w-24 h-24 opacity-10 hidden lg:block">
-                <div className="absolute inset-0 glass-card rounded-2xl -rotate-6 border-[#7f19e6]/20"></div>
+                <div className="absolute inset-0 glass-card rounded-2xl -rotate-6 border-[#22C55E]/20"></div>
             </div>
         </div>
     );
