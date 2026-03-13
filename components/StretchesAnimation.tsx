@@ -9,7 +9,7 @@ interface StretchesAnimationProps {
 const steps = [
     {
         icon: (
-            <svg className="w-6 h-6 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-6 h-6 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
         ),
@@ -18,7 +18,7 @@ const steps = [
     },
     {
         icon: (
-            <svg className="w-6 h-6 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-6 h-6 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
             </svg>
         ),
@@ -27,7 +27,7 @@ const steps = [
     },
     {
         icon: (
-            <svg className="w-6 h-6 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-6 h-6 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 013.15 0v1.5m-3.15 0l.075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 013.15 0V15M6.9 7.575a1.575 1.575 0 10-3.15 0v8.175a6.75 6.75 0 006.75 6.75h2.018a5.25 5.25 0 003.712-1.538l1.732-1.732a5.25 5.25 0 001.538-3.712l.003-2.024a.668.668 0 01.198-.471 1.575 1.575 0 10-2.228-2.228 3.818 3.818 0 00-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0116.35 15m.002 0h-.002" />
             </svg>
         ),
@@ -70,23 +70,23 @@ const StretchesAnimation: React.FC<StretchesAnimationProps> = ({ seconds, onSkip
             {/* Ambient background glow */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                 <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-[140px] animate-pulse"
-                    style={{ background: 'rgba(56,189,248,0.1)', animationDuration: '7s' }} />
+                    style={{ background: 'rgba(34,197,94,0.1)', animationDuration: '7s' }} />
                 <div className="absolute bottom-0 right-1/4 w-[350px] h-[350px] rounded-full blur-[120px] animate-pulse"
-                    style={{ background: 'rgba(168,85,247,0.07)', animationDuration: '9s', animationDelay: '1s' }} />
+                    style={{ background: 'rgba(34,197,94,0.07)', animationDuration: '9s', animationDelay: '1s' }} />
             </div>
 
             {/* Header / Timer Section */}
             <div className="relative z-10 flex flex-col items-center gap-4">
                 <div className="flex items-center gap-3 px-6 py-3 rounded-full"
-                    style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)' }}
+                    style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
                 >
-                    <svg className="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <svg className="w-5 h-5 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
                     </svg>
-                    <span className="text-sm font-semibold text-sky-400 uppercase tracking-wider">Desk Stretches</span>
+                    <span className="text-sm font-semibold text-[#22c55e] uppercase tracking-wider">Desk Stretches</span>
                 </div>
 
-                <div className="text-[5rem] sm:text-[6rem] font-bold tracking-tighter text-white/90 drop-shadow-[0_0_30px_rgba(56,189,248,0.15)] tabular-nums leading-none">
+                <div className="text-[5rem] sm:text-[6rem] font-bold tracking-tighter text-white/90 drop-shadow-[0_0_30px_rgba(34,197,94,0.15)] tabular-nums leading-none">
                     {timeStr}
                 </div>
 
@@ -96,7 +96,7 @@ const StretchesAnimation: React.FC<StretchesAnimationProps> = ({ seconds, onSkip
                         className="h-full rounded-full transition-all duration-1000 ease-linear"
                         style={{
                             width: `${progress * 100}%`,
-                            background: 'linear-gradient(90deg, #38bdf8, #818cf8)',
+                            background: 'linear-gradient(90deg, #16a34a, #22c55e)',
                         }}
                     />
                 </div>
@@ -123,10 +123,10 @@ const StretchesAnimation: React.FC<StretchesAnimationProps> = ({ seconds, onSkip
                     >
                         {/* Number Indicator */}
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-sky-400/10 text-sky-400 flex items-center justify-center font-bold text-sm border border-sky-400/20 group-hover:bg-sky-400/20 group-hover:scale-110 transition-all duration-300">
+                            <div className="w-8 h-8 rounded-full bg-[#22c55e]/10 text-[#22c55e] flex items-center justify-center font-bold text-sm border border-[#22c55e]/20 group-hover:bg-[#22c55e]/20 group-hover:scale-110 transition-all duration-300">
                                 {index + 1}
                             </div>
-                            <div className="text-sky-400 opacity-80">
+                            <div className="text-[#22c55e] opacity-80">
                                 {step.icon}
                             </div>
                         </div>
@@ -141,7 +141,7 @@ const StretchesAnimation: React.FC<StretchesAnimationProps> = ({ seconds, onSkip
             {/* Skip button */}
             <button
                 onClick={onSkip}
-                className="relative z-10 mt-6 text-xs text-white/20 hover:text-white/50 transition-colors cursor-pointer uppercase tracking-widest"
+                className="relative z-10 mt-6 text-xs text-white/40 hover:text-white/60 transition-colors cursor-pointer uppercase tracking-widest"
             >
                 Skip break
             </button>

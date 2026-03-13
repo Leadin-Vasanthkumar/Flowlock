@@ -26,145 +26,155 @@ const TimerView: React.FC<TimerViewProps> = ({
     const activeTask = tasks.find(t => t.id === activeTaskId);
 
     const formatTime = (totalSeconds: number) => {
-        const hrs = Math.floor(totalSeconds / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const mins = Math.floor(totalSeconds / 60);
         const secs = totalSeconds % 60;
-        if (hrs > 0) {
-            return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Calculate progress for visual feedback
-    const totalEstimated = activeTask?.estimatedSeconds || 1;
+    const totalEstimated = activeTask?.pomodoroProfile === '90-10' ? 5400 : activeTask?.pomodoroProfile === '50-10' ? 3000 : 1500;
     const progress = Math.max(0, Math.min(1, 1 - (seconds / totalEstimated)));
+    const dashOffset = 879.6 * (1 - progress);
 
     return (
-        <div className="relative h-full w-full flex flex-col items-center justify-center overflow-hidden">
-            {/* Background Gradient */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-purple-500/10 to-pink-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
-
-            {/* Background Breathing Rings */}
-            <div className="absolute inset-0 z-10 pointer-events-none">
-                <BreathingRings color="purple" />
+        <div className="relative h-screen w-full flex flex-col items-center justify-center bg-[#0D0E0D] text-white font-['Inter'] overflow-hidden select-none">
+            
+            {/* Ambient Background Glow */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-[700px] max-h-[700px] bg-[#22C55E]/[0.03] blur-[160px] rounded-full" />
             </div>
 
-            {/* Back to Dashboard - Top Left */}
-            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 md:top-10 md:left-12 z-50">
+            {/* Top Navigation */}
+            <div className="absolute top-6 left-6 z-50">
                 <button
                     onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/5 transition-all text-xs uppercase tracking-widest text-white/40 hover:text-white"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 hover:border-[#22C55E]/40 text-[#909AA6] hover:text-[#22C55E] transition-all text-xs font-bold tracking-widest uppercase cursor-pointer backdrop-blur-sm"
                 >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
-                    <span>Dashboard</span>
+                    Dashboard
                 </button>
             </div>
 
-            {/* Main Timer Display */}
-            <div className="relative z-20 flex flex-col items-center justify-center text-center">
-                <h1 className="text-[4rem] sm:text-[6rem] md:text-[10rem] lg:text-[16rem] font-bold tracking-tighter drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] transition-all duration-700">
-                    {formatTime(seconds)}
-                </h1>
-                <div className="flex flex-col items-center transition-all duration-500 mt-[-0.5rem] sm:mt-[-1rem] md:mt-[-2rem]">
-                    {activeTask && (
-                        <div className={`transition-opacity duration-500 ${timerStatus === 'running' ? 'opacity-40' : 'opacity-60'}`}>
-                            <p className="text-base sm:text-lg md:text-xl font-medium tracking-wide">{activeTask.title}</p>
+            {/* Main Composition */}
+            <main className="relative z-10 flex flex-col items-center justify-center w-full max-w-2xl px-6 gap-16">
+                
+                {/* Timer Orb Section */}
+                <div className="relative flex justify-center items-center w-full min-h-[400px]">
+                    {/* Breathing Orbital Rings (Center-Aligned to Orb) */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <BreathingRings />
+                    </div>
 
-                            <div className="flex items-center justify-center gap-3 mt-1.5 text-sm text-slate-500">
-                                {activeTask.estimatedSeconds && (
-                                    <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 backdrop-blur-sm">
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        {Math.round(activeTask.estimatedSeconds / 60)} min
-                                    </span>
-                                )}
-
-                                {activeTask.location && (
-                                    <>
-                                        {activeTask.estimatedSeconds && (
-                                            <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                                        )}
-                                        <span className="flex items-center gap-1.5">
-                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    {/* Numerals */}
+                    <div className="relative w-[320px] h-[320px] flex flex-col items-center justify-center">
+                        <div className="text-center z-10">
+                            <h1 className="text-8xl font-bold tracking-tight text-white mb-3">
+                                {formatTime(seconds)}
+                            </h1>
+                            <div className="flex flex-col items-center gap-2">
+                                <span className="text-[#909AA6] text-sm font-semibold tracking-wide max-w-[200px] truncate">
+                                    {activeTask?.title || 'Focused Session'}
+                                </span>
+                                {activeTask?.pomodoroProfile && (
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1.5 text-[#909AA6]/40 text-[9px] uppercase font-bold tracking-[0.2em]">
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            {activeTask.location}
-                                        </span>
-                                    </>
+                                            {activeTask.pomodoroProfile.split('-')[0]} MIN FOCUS
+                                        </div>
+                                        {activeTask.pomodorosRequired && activeTask.pomodorosRequired > 1 && (
+                                            <div className="flex items-center gap-1.5 text-[#22C55E]/60 text-[9px] uppercase font-bold tracking-[0.2em]">
+                                                • SET {(activeTask.pomodorosCompleted || 0) + 1} OF {activeTask.pomodorosRequired}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-48 h-1 rounded-full bg-white/5 mt-6 overflow-hidden">
-                    <div
-                        className="h-full rounded-full transition-all duration-1000 ease-linear"
-                        style={{
-                            width: `${progress * 100}%`,
-                            background: 'linear-gradient(90deg, #7f19e6, #a855f7)',
-                        }}
-                    />
+                {/* Progress & Controls Section */}
+                <div className="w-full flex flex-col items-center gap-12">
+                    
+                    {/* Session Progress Bar */}
+                    <div className="w-full max-w-md">
+                        <div className="flex justify-between items-center mb-3">
+                            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#909AA6]">SESSION PROGRESS</span>
+                            <span className="text-[10px] font-bold text-[#22C55E] tracking-widest">{Math.round(progress * 100)}%</span>
+                        </div>
+                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full bg-[#22C55E] transition-all duration-1000 ease-linear"
+                                style={{ 
+                                    width: `${progress * 100}%`,
+                                    boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)'
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Action Controls */}
+                    <div className="flex items-center gap-14">
+                        <div className="flex flex-col items-center gap-4">
+                            <button 
+                                onClick={onReset}
+                                className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center text-[#909AA6]/50 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                                aria-label="Reset"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#909AA6]/40">RESET</span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-4">
+                            <button 
+                                onClick={onToggleTimer}
+                                className="w-16 h-16 rounded-full bg-[#22C55E] flex items-center justify-center text-[#0D0E0D] shadow-xl shadow-[#22C55E]/10 hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+                                aria-label={timerStatus === 'running' ? 'Pause' : 'Start'}
+                            >
+                                {timerStatus === 'running' ? (
+                                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                        <rect x="6" y="5" width="4" height="14" rx="1" />
+                                        <rect x="14" y="5" width="4" height="14" rx="1" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-7 h-7 translate-x-0.5 fill-current" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                )}
+                            </button>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#22C55E]">{timerStatus === 'running' ? 'PAUSE' : 'START'}</span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-4">
+                            <button 
+                                onClick={onMarkDone}
+                                className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center text-[#909AA6]/50 hover:text-[#22C55E] hover:bg-white/5 transition-all cursor-pointer"
+                                aria-label="Complete"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </button>
+                            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#909AA6]/40">COMPLETE</span>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Control Buttons — compact */}
-                <div className="flex items-center gap-4 mt-5 z-40">
-                    {/* Reset */}
-                    <button
-                        onClick={onReset}
-                        className="w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-300 opacity-30 hover:opacity-100 border-white/20 hover:bg-white/5 active:scale-90"
-                        title="Reset Timer"
-                    >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </button>
-
-                    {/* Play/Pause */}
-                    <button
-                        onClick={onToggleTimer}
-                        disabled={!activeTaskId}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 ${!activeTaskId
-                            ? 'opacity-10 border-white/10 cursor-not-allowed'
-                            : 'opacity-60 hover:opacity-100 border-white/20 hover:bg-white/5 active:scale-90'
-                            }`}
-                    >
-                        {timerStatus === 'running' ? (
-                            <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                                <path d="M10 9v6m4-6v6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
-                        ) : (
-                            <svg className="h-5 w-5 translate-x-0.5 fill-current" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z" />
-                            </svg>
-                        )}
-                    </button>
-
-                    {/* Mark Done */}
-                    <button
+                <div className="absolute bottom-12 flex flex-col items-center gap-6">
+                    <button 
                         onClick={onMarkDone}
-                        disabled={!activeTaskId}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-300 ${!activeTaskId
-                            ? 'opacity-10 border-white/10 cursor-not-allowed'
-                            : 'opacity-30 hover:opacity-100 border-white/20 hover:bg-white/5 active:scale-90'
-                            }`}
-                        title="Mark as Done"
+                        className="text-[#909AA6]/30 hover:text-white transition-colors text-[11px] font-bold tracking-widest uppercase flex items-center gap-1 group cursor-pointer"
                     >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                        </svg>
+                        SKIP <span className="group-hover:translate-x-1 transition-transform">→</span>
                     </button>
                 </div>
-            </div>
-
-            <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-white/5 uppercase tracking-[0.8em] pointer-events-none">
-                FLOWLOCK TIMER
-            </div>
+            </main>
         </div>
     );
 };

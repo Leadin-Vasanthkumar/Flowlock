@@ -96,10 +96,8 @@ const AuthPage: React.FC = () => {
                 >
                     {/* Logo & Header */}
                     <div className="flex flex-col items-center text-center mb-10">
-                        <div className="w-12 h-12 bg-[#7f19e6] rounded-xl flex items-center justify-center shadow-lg shadow-[#7f19e6]/20 mb-4">
-                            <svg className="w-7 h-7" fill="white" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd"></path>
-                            </svg>
+                        <div className="w-12 h-12 rounded-xl border border-white/10 mb-4 overflow-hidden shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                            <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight text-white mb-2">
                             {forgotMode ? 'Reset your password' : 'Welcome back'}

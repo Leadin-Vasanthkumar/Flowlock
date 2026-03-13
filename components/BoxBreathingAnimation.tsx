@@ -111,7 +111,7 @@ const BoxBreathingAnimation: React.FC<BoxBreathingAnimationProps> = ({ seconds, 
                     style={{
                         width: `${300 + innerScale * 100}px`,
                         height: `${300 + innerScale * 100}px`,
-                        background: `radial-gradient(circle, rgba(127,25,230,${0.15 + innerScale * 0.1}) 0%, transparent 70%)`,
+                        background: `radial-gradient(circle, rgba(34,197,94,${0.15 + innerScale * 0.1}) 0%, transparent 70%)`,
                         transition: 'all 0.5s ease-out',
                     }}
                 />
@@ -119,13 +119,13 @@ const BoxBreathingAnimation: React.FC<BoxBreathingAnimationProps> = ({ seconds, 
 
             {/* Activity label */}
             <div className="relative z-10 flex items-center gap-3 px-6 py-3 rounded-full mb-4"
-                style={{ background: 'rgba(127,25,230,0.1)', border: '1px solid rgba(127,25,230,0.2)' }}
+                style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
             >
-                <svg className="w-5 h-5 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="w-5 h-5 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m0 0l-4-4m4 4l4-4M4.5 12h15" />
                     <circle cx="12" cy="12" r="9" strokeDasharray="4 2" />
                 </svg>
-                <span className="text-sm font-semibold text-[#a855f7] uppercase tracking-wider">Box Breathing</span>
+                <span className="text-sm font-semibold text-[#22c55e] uppercase tracking-wider">Box Breathing</span>
             </div>
 
             {/* Main animation area */}
@@ -161,12 +161,12 @@ const BoxBreathingAnimation: React.FC<BoxBreathingAnimationProps> = ({ seconds, 
                     {/* Gradient definition */}
                     <defs>
                         <radialGradient id="orbGlow" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
-                            <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+                            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
                         </radialGradient>
                         <linearGradient id="orbGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#7f19e6" />
-                            <stop offset="100%" stopColor="#a855f7" />
+                            <stop offset="0%" stopColor="#16a34a" />
+                            <stop offset="100%" stopColor="#22c55e" />
                         </linearGradient>
                     </defs>
 
@@ -183,9 +183,9 @@ const BoxBreathingAnimation: React.FC<BoxBreathingAnimationProps> = ({ seconds, 
                         cx={orbX}
                         cy={orbY}
                         r={10}
-                        fill="#a855f7"
+                        fill="#22c55e"
                         style={{
-                            filter: 'drop-shadow(0 0 14px rgba(168,85,247,0.9)) drop-shadow(0 0 28px rgba(168,85,247,0.5))',
+                            filter: 'drop-shadow(0 0 14px rgba(34,197,94,0.9)) drop-shadow(0 0 28px rgba(34,197,94,0.5))',
                         }}
                     />
                 </svg>
@@ -201,8 +201,8 @@ const BoxBreathingAnimation: React.FC<BoxBreathingAnimationProps> = ({ seconds, 
                         marginTop: -100,
                         marginLeft: -100,
                         transform: `scale(${innerScale})`,
-                        background: 'radial-gradient(circle, rgba(127,25,230,0.15) 0%, rgba(127,25,230,0.05) 60%, transparent 100%)',
-                        border: '1px solid rgba(127,25,230,0.2)',
+                        background: 'radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(34,197,94,0.05) 60%, transparent 100%)',
+                        border: '1px solid rgba(34,197,94,0.2)',
                         transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                 />
@@ -226,46 +226,31 @@ const BoxBreathingAnimation: React.FC<BoxBreathingAnimationProps> = ({ seconds, 
                             </span>
                         </motion.div>
                     </AnimatePresence>
-                    <span className="text-5xl font-bold text-[#a855f7]/60 mt-3 tabular-nums">
+                    <span className="text-5xl font-bold text-[#22c55e]/60 mt-3 tabular-nums">
                         {phaseCountdown}
                     </span>
                 </div>
             </div>
 
             {/* Cycle counter + remaining time */}
-            <div className="relative z-10 flex items-center gap-6 mt-2">
+            <div className="relative z-10 flex items-center gap-10 mt-6">
                 <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-white/20 uppercase tracking-widest">Cycle</span>
-                    <span className="text-sm font-bold text-white/50 tabular-nums">{cycleCount}</span>
+                    <span className="text-[13px] text-white/40 uppercase tracking-widest mb-1">Cycle</span>
+                    <span className="text-2xl font-bold text-white/90 tabular-nums">{cycleCount}</span>
                 </div>
-                <div className="w-px h-6 bg-white/10" />
+                <div className="w-px h-10 bg-white/20" />
                 <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-white/20 uppercase tracking-widest">Remaining</span>
-                    <span className="text-sm font-bold text-white/50 tabular-nums">{timeStr}</span>
+                    <span className="text-[13px] text-white/40 uppercase tracking-widest mb-1">Remaining</span>
+                    <span className="text-2xl font-bold text-white/90 tabular-nums">{timeStr}</span>
                 </div>
             </div>
 
-            {/* Phase dots indicator */}
-            <div className="relative z-10 flex items-center gap-2 mt-2">
-                {phaseOrder.map((p, i) => (
-                    <div
-                        key={p}
-                        className="rounded-full transition-all duration-300"
-                        style={{
-                            width: phaseIndex === i ? 24 : 6,
-                            height: 6,
-                            background: phaseIndex === i
-                                ? 'linear-gradient(90deg, #7f19e6, #a855f7)'
-                                : 'rgba(255,255,255,0.1)',
-                        }}
-                    />
-                ))}
-            </div>
+
 
             {/* Skip button */}
             <button
                 onClick={onSkip}
-                className="relative z-10 mt-4 text-xs text-white/20 hover:text-white/50 transition-colors cursor-pointer uppercase tracking-widest"
+                className="relative z-10 mt-4 text-xs text-white/40 hover:text-white/60 transition-colors cursor-pointer uppercase tracking-widest"
             >
                 Skip break
             </button>

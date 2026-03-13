@@ -79,26 +79,29 @@ const UserProfileMenu: React.FC = () => {
                 aria-haspopup="true"
                 className="cursor-pointer focus:outline-none"
                 style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    border: '2px solid rgba(255, 255, 255, 0.12)',
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     padding: '0',
-                    background: 'transparent',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
-                    boxShadow: isOpen ? '0 0 0 3px rgba(127, 25, 230, 0.35)' : 'none',
+                    boxShadow: isOpen ? '0 0 0 3px rgba(34, 197, 94, 0.2), 0 8px 16px -4px rgba(0, 0, 0, 0.4)' : 'none',
+                    transform: isOpen ? 'scale(0.95)' : 'scale(1)',
                 }}
                 onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(127, 25, 230, 0.6)';
-                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(127, 25, 230, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(34, 197, 94, 0.1)';
                 }}
                 onMouseLeave={(e) => {
                     if (!isOpen) {
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
                         e.currentTarget.style.boxShadow = 'none';
                     }
                 }}
@@ -112,7 +115,6 @@ const UserProfileMenu: React.FC = () => {
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover',
-                            borderRadius: '50%',
                         }}
                     />
                 ) : (
@@ -123,12 +125,12 @@ const UserProfileMenu: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                            color: '#fff',
-                            fontSize: '14px',
-                            fontWeight: 700,
+                            background: 'linear-gradient(135deg, #15803d 0%, #22c55e 100%)',
+                            color: '#000',
+                            fontSize: '15px',
+                            fontWeight: 800,
                             fontFamily: "'Inter', sans-serif",
-                            borderRadius: '50%',
+                            letterSpacing: '-0.02em',
                         }}
                     >
                         {getInitials(userInfo.name || 'U')}
@@ -136,46 +138,53 @@ const UserProfileMenu: React.FC = () => {
                 )}
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Glassmorphic Dropdown Menu */}
             <div
                 role="menu"
                 aria-label="Profile options"
                 style={{
                     position: 'absolute',
-                    top: 'calc(100% + 8px)',
+                    top: 'calc(100% + 12px)',
                     right: '0',
-                    minWidth: '220px',
-                    borderRadius: '14px',
+                    minWidth: '240px',
+                    borderRadius: '20px',
                     overflow: 'hidden',
                     opacity: isOpen ? 1 : 0,
-                    transform: isOpen ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.95)',
+                    transform: isOpen ? 'translateY(0) scale(1)' : 'translateY(-12px) scale(0.95)',
                     pointerEvents: isOpen ? 'auto' : 'none',
-                    transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    background: 'rgba(22, 14, 36, 0.85)',
-                    backdropFilter: 'blur(24px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.04)',
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    background: 'rgba(13, 14, 13, 0.7)',
+                    backdropFilter: 'blur(32px) saturate(200%)',
+                    WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    boxShadow: `
+                        0 24px 48px -12px rgba(0, 0, 0, 0.6), 
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+                        0 0 40px -10px rgba(34, 197, 94, 0.1)
+                    `,
                 }}
             >
                 {/* User Info Section */}
                 <div
                     style={{
-                        padding: '16px',
+                        padding: '20px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+                        gap: '14px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                        background: 'linear-gradient(180deg, rgba(34, 197, 94, 0.05) 0%, transparent 100%)',
                     }}
                 >
-                    {/* Small Avatar */}
+                    {/* Small Avatar - matching folder card head header look */}
                     <div
                         style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
                             overflow: 'hidden',
                             flexShrink: 0,
+                            border: '1px solid rgba(34, 197, 94, 0.2)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                         }}
                     >
                         {userInfo.avatarUrl ? (
@@ -193,10 +202,10 @@ const UserProfileMenu: React.FC = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                                    color: '#fff',
-                                    fontSize: '12px',
-                                    fontWeight: 700,
+                                    background: 'linear-gradient(135deg, #166534 0%, #22c55e 100%)',
+                                    color: '#000',
+                                    fontSize: '14px',
+                                    fontWeight: 800,
                                 }}
                             >
                                 {getInitials(userInfo.name || 'U')}
@@ -207,25 +216,27 @@ const UserProfileMenu: React.FC = () => {
                         <div
                             style={{
                                 color: '#fff',
-                                fontSize: '13px',
-                                fontWeight: 600,
+                                fontSize: '14px',
+                                fontWeight: 700,
                                 fontFamily: "'Inter', sans-serif",
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
+                                letterSpacing: '-0.01em',
                             }}
                         >
                             {userInfo.name}
                         </div>
                         <div
                             style={{
-                                color: 'rgba(255, 255, 255, 0.4)',
-                                fontSize: '11px',
+                                color: 'rgba(255, 255, 255, 0.45)',
+                                fontSize: '12px',
+                                fontWeight: 400,
                                 fontFamily: "'Inter', sans-serif",
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                marginTop: '2px',
+                                marginTop: '1px',
                             }}
                         >
                             {userInfo.email}
@@ -233,55 +244,85 @@ const UserProfileMenu: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sign Out Button */}
-                <div style={{ padding: '6px' }}>
+                {/* Menu Items Section */}
+                <div style={{ padding: '8px' }}>
                     <button
                         role="menuitem"
                         onClick={handleSignOut}
-                        className="cursor-pointer"
+                        className="cursor-pointer group"
                         style={{
                             width: '100%',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px',
-                            padding: '10px 12px',
-                            borderRadius: '10px',
+                            justifyContent: 'space-between',
+                            padding: '12px 16px',
+                            borderRadius: '14px',
                             border: 'none',
                             background: 'transparent',
-                            color: 'rgba(255, 255, 255, 0.6)',
-                            fontSize: '13px',
-                            fontWeight: 500,
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            fontSize: '14px',
+                            fontWeight: 600,
                             fontFamily: "'Inter', sans-serif",
-                            transition: 'all 0.15s ease',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                             textAlign: 'left',
+                            gap: '12px',
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-                            e.currentTarget.style.color = '#fff';
+                            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.1)';
+                            e.currentTarget.style.color = '#22c55e';
+                            e.currentTarget.style.transform = 'translateX(4px)';
                         }}
                         onMouseLeave={(e) => {
                             e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+                            e.currentTarget.style.transform = 'translateX(0)';
                         }}
                     >
-                        {/* Sign Out Icon */}
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {/* Sign Out Icon */}
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                            <span>Sign out</span>
+                        </div>
+                        
+                        <svg 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity" 
+                            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
                         >
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" y1="12" x2="9" y2="12" />
+                            <polyline points="9 18 15 12 9 6" />
                         </svg>
-                        Sign out
                     </button>
+                </div>
+                
+                {/* Subtle Brand Footer */}
+                <div style={{ 
+                    padding: '12px 20px', 
+                    background: 'rgba(255, 255, 255, 0.02)', 
+                    display: 'flex', 
+                    justifyContent: 'center' 
+                }}>
+                    <span style={{ 
+                        fontSize: '10px', 
+                        fontWeight: 800, 
+                        color: 'rgba(34, 197, 94, 0.3)', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.1em' 
+                    }}>
+                        Flowlock Beta
+                    </span>
                 </div>
             </div>
         </div>

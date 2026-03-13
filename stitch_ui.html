@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7C3AED",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#111118",
+                        "card-dark": "#1A1A2E",
+                        "border-dark": "#2D2D3F"
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2D2D3F; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-[1440px] mx-auto min-h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between px-8 py-4 border-b border-border-dark">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="bg-primary p-1.5 rounded-lg text-white">
+<span class="material-symbols-outlined text-2xl block">all_inclusive</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Flowlock</h1>
+</div>
+<span class="px-2 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-bold tracking-widest uppercase">Beta</span>
+</div>
+<div class="flex items-center gap-6">
+<button class="px-5 py-2 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
+                    Analysis
+                </button>
+<div class="relative group">
+<div class="size-10 rounded-full bg-cover bg-center border-2 border-border-dark cursor-pointer" data-alt="Professional user profile avatar headshot" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBtohW2xIeo-_Zbk9TdtZQV_3VB0zul9OgajcyIs5_ssWtlR_lmXTRsBN63DrgeAmF0X8gwz2RD-2UfdjBnjcatvbwO3EZRefzfdPWwTSc9NJ73qGheKslTfxb7IRLFCbPNjsW84ViudY4OZJwveWv6CBo-Bu7AmbvDfJ9C7J2oHfx_4LfM1TrUUJ9XwzeQ5fqtwhCWC_T6dme0A9yBOrsXsbe9Y4wJuwp1YFUaPNp3_zydaKtqW4uydG3MMgX17CWBNK93o6ekG6ye')">
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Split Layout -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Left Panel (60%) -->
+<section class="w-3/5 p-10 border-r border-border-dark flex flex-col gap-8 custom-scrollbar overflow-y-auto">
+<div>
+<h2 class="text-4xl font-extrabold tracking-tight mb-2">Today's Focus</h2>
+<p class="text-slate-500 dark:text-slate-400">Manage your deep work sessions and daily tasks.</p>
+</div>
+<!-- Add Task Row -->
+<button class="w-full flex items-center justify-center gap-3 p-6 rounded-2xl border-2 border-dashed border-border-dark hover:border-primary/50 hover:bg-primary/5 transition-all group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary">add_circle</span>
+<span class="text-slate-400 group-hover:text-slate-200 font-medium">Add a task</span>
+</button>
+<!-- Active Task List -->
+<div class="flex flex-col gap-4">
+<!-- Task Item 1 -->
+<div class="bg-card-dark p-6 rounded-2xl flex items-center justify-between group hover:ring-1 hover:ring-primary/30 transition-all border border-primary">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<h3 class="text-lg font-semibold">Deep Work Session: Product Specs</h3>
+<span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs font-bold uppercase tracking-wider">40m</span>
+</div>
+<p class="text-slate-500 text-sm">Focus on technical requirements and API documentation.</p>
+</div>
+<button class="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-white font-bold hover:scale-105 transition-transform shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+<span>Start Focus</span>
+</button>
+</div>
+<!-- Task Item 2 -->
+<div class="bg-card-dark p-6 rounded-2xl flex items-center justify-between group hover:ring-1 hover:ring-primary/30 transition-all">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<h3 class="text-lg font-semibold">Email Triage &amp; Comms</h3>
+<span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs font-bold uppercase tracking-wider">25m</span>
+</div>
+<p class="text-slate-500 text-sm">Clear inbox and respond to urgent stakeholder messages.</p>
+</div>
+<button class="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-white font-bold hover:scale-105 transition-transform shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+<span>Start Focus</span>
+</button>
+</div>
+<!-- Task Item 3 -->
+<div class="bg-card-dark p-6 rounded-2xl flex items-center justify-between group hover:ring-1 hover:ring-primary/30 transition-all">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<h3 class="text-lg font-semibold">Design Review: Flowlock V2</h3>
+<span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs font-bold uppercase tracking-wider">30m</span>
+</div>
+<p class="text-slate-500 text-sm">Peer review of the latest UI components and layouts.</p>
+</div>
+<button class="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-white font-bold hover:scale-105 transition-transform shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+<span>Start Focus</span>
+</button>
+</div>
+</div>
+<!-- Completed Tasks Section -->
+<div class="mt-4 border-t border-border-dark pt-6">
+<button class="flex items-center justify-between w-full text-slate-400 hover:text-slate-200 transition-colors">
+<span class="font-medium">Completed · 4</span>
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+<!-- Sample Completed Task (Hidden by default in logic, visible here for design) -->
+<div class="mt-4 flex flex-col gap-3 opacity-50">
+<div class="flex items-center gap-3 py-2 px-4 line-through"><span class="material-symbols-outlined text-slate-500 text-base">check_circle</span>
+<span class="text-sm">Finalize weekly report</span></div>
+</div>
+</div>
+</section>
+<!-- Right Panel (40%) -->
+<section class="w-2/5 p-10 bg-background-dark/50 flex flex-col gap-8 custom-scrollbar overflow-y-auto">
+<div>
+<h2 class="text-2xl font-bold tracking-tight">Goals</h2>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<!-- Goal Card 1 -->
+<div class="bg-card-dark p-6 rounded-xl border-l-4 border-red-500 flex flex-col gap-1 shadow-sm">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Gratitude</span>
+<p class="text-[18px] leading-relaxed font-medium">Log 3 things I'm thankful for every morning before starting work.</p>
+</div>
+<!-- Goal Card 2 -->
+<div class="bg-card-dark p-6 rounded-xl border-l-4 border-primary flex flex-col gap-1 relative overflow-hidden group shadow-sm">
+<div class="flex justify-between items-start">
+<div class="flex flex-col flex-1">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Year Goal</span>
+<p class="text-[18px] leading-relaxed font-medium pr-16">Achieve Senior Product Designer role and master 3D motion design.</p>
+</div>
+<div class="rounded-lg bg-cover bg-center border border-border-dark flex-shrink-0 size-24" data-alt="Abstract futuristic digital hardware or synth" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBmfqJFADlFnPJyN5BKWSIE-V2N-1lA6IDLWOCrUThUzZtHsfAQ2r232UIvNwD5ssYgkU4yUlub-tLj4AMsaNM6J07k0TamykgRPS9c_BjXK4iVyEk6fniCgQxLJOu_FzurG11x-xcqANT0n02UHdInkjrJINhwupXxiIcD2Jr_k6yajPeoMoB_GhawuAXbaFB3TO4fpbnzXP9d04iG_EO_wp41v2G6whmJjjLbAdfiOAyMPXOJRigG0RJd3FsPmV3MeExmfSNzqVl_')">
+</div>
+</div>
+</div>
+<!-- Goal Card 3 -->
+<div class="bg-card-dark p-6 rounded-xl border-l-4 border-blue-500 flex flex-col gap-1 shadow-sm">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">This Month</span>
+<p class="text-[18px] leading-relaxed font-medium">Complete the Advanced TypeScript certification and build 2 prototypes.</p>
+</div>
+<!-- Goal Card 4 -->
+<div class="bg-card-dark p-6 rounded-xl border-l-4 border-green-500 flex flex-col gap-1 shadow-sm">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">This Week</span>
+<p class="text-[18px] leading-relaxed font-medium">Refactor Flowlock dashboard layout and optimize mobile responsiveness.</p>
+</div>
+</div>
+<!-- Footer Info -->
+<div class="mt-auto pt-8">
+<div class="bg-primary/10 p-4 rounded-2xl flex items-center gap-4 border border-primary/20">
+<div class="bg-primary/20 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined block">bolt</span>
+</div>
+<div>
+<p class="text-sm font-bold">Productivity Streak</p>
+<p class="text-xs text-slate-400">You've hit your focus goals 5 days in a row!</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

@@ -17,6 +17,7 @@ interface GuidedBreakProps {
     breakActivity: BreakActivity | null;
     breakSeconds: number;
     remainingTasks: Task[];
+    autoContinueTaskId?: string | null;
     onDrinkWater: () => void;
     onSelectActivity: (activity: BreakActivity) => void;
     onSkipBreak: () => void;
@@ -48,57 +49,38 @@ const VictoryPhase: React.FC<{ taskName: string; onDone: () => void }> = ({ task
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col items-center justify-center text-center px-6 gap-8"
+        className="flex flex-col items-center justify-center w-full max-w-2xl px-6 z-10"
     >
-        {/* Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(127,25,230,0.25) 0%, transparent 70%)' }}
-        />
-
-        {/* Checkmark icon */}
-        <div className="relative w-24 h-24 rounded-full flex items-center justify-center"
-            style={{
-                background: 'rgba(127,25,230,0.12)',
-                border: '1px solid rgba(127,25,230,0.25)',
-                boxShadow: '0 0 60px rgba(127,25,230,0.2)',
-            }}
-        >
-            <svg className="w-10 h-10 text-[#a855f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+        <div className="relative flex items-center justify-center mb-10">
+            <div className="absolute w-40 h-40 bg-[#00ff88]/20 rounded-full blur-3xl mix-blend-screen"></div>
+            <div className="absolute w-24 h-24 bg-[#00ff88]/40 rounded-full blur-xl mix-blend-screen"></div>
+            <div className="relative w-24 h-24 rounded-full border-4 border-[#00ff88] flex items-center justify-center bg-[#0a0a0a] shadow-[0_0_40px_rgba(0,255,136,0.3)]">
+                <svg className="w-12 h-12 text-[#00ff88]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
         </div>
-
-        <div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 tracking-tight">
-                Great work man!
-            </h2>
-            <p className="text-lg text-white/50 font-medium">
-                You finished: <span className="text-[#a855f7]">{taskName}</span>
-            </p>
+        
+        <div className="text-center mb-12">
+            <h1 className="text-5xl font-black text-white tracking-tight mb-4">Great work man!</h1>
+            <p className="text-lg text-slate-400 font-medium">You finished: <span className="text-[#00ff88] font-bold tracking-wide">{taskName}</span></p>
         </div>
-
-        {/* Water prompt */}
-        <div className="flex items-center gap-3 px-6 py-4 rounded-2xl mt-2"
-            style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(16px)',
-            }}
-        >
-            <svg className="w-6 h-6 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c-1.2 2.4-4.5 5-4.5 8.5a4.5 4.5 0 109 0C16.5 8 13.2 5.4 12 3z" />
-            </svg>
-            <p className="text-sm text-white/60">Time to reset. Please drink a glass of water.</p>
+        
+        <div className="w-full max-w-md bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-5 flex items-center gap-5 shadow-2xl mb-12 text-left">
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-slate-800/50 text-blue-400 shrink-0">
+                <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z" />
+                </svg>
+            </div>
+            <div className="flex flex-col">
+                <h3 className="text-white text-lg font-semibold mb-1">Time to reset.</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">Please drink a glass of water.</p>
+            </div>
         </div>
-
-        {/* Done button */}
-        <button
+        
+        <button 
             onClick={onDone}
-            className="mt-4 px-10 py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            style={{
-                background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                boxShadow: '0 8px 32px -4px rgba(127,25,230,0.4)',
-            }}
+            className="w-full max-w-xs h-14 rounded-full bg-[#00ff88] text-[#0a0a0a] font-bold text-lg tracking-wide hover:bg-[#00e075] transition-all duration-300 shadow-[0_8px_32px_rgba(0,255,136,0.3)] hover:shadow-[0_12px_40px_rgba(0,255,136,0.4)] hover:-translate-y-0.5"
         >
             Done
         </button>
@@ -185,12 +167,12 @@ const SelectPhase: React.FC<{ onSelect: (a: BreakActivity) => void }> = ({ onSel
                     transition={{ delay: i * 0.1 + 0.2 }}
                     className="flex-1 relative list-none"
                 >
-                    <div className="relative h-full rounded-[2rem] border-[1px] border-white/10 p-2 overflow-hidden transition-all hover:scale-[1.03] active:scale-[0.97]">
+                    <div className="relative h-full rounded-[2rem] border-[1px] border-white/10 p-2 overflow-hidden transition-all hover:scale-[1.03] active:scale-[0.97] hover:border-[#00ff88]/25 hover:shadow-[0_0_20px_rgba(0,255,136,0.1)] hover:bg-[#00ff88]/2 group">
                         <GlowingEffect
-                            spread={40}
+                            spread={41}
                             glow={true}
                             disabled={false}
-                            proximity={64}
+                            proximity={65}
                             inactiveZone={0.01}
                             borderWidth={3}
                         />
@@ -203,15 +185,15 @@ const SelectPhase: React.FC<{ onSelect: (a: BreakActivity) => void }> = ({ onSel
                                 backdropFilter: 'blur(20px)',
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(127,25,230,0.1)';
-                                e.currentTarget.style.borderColor = 'rgba(127,25,230,0.25)';
+                                e.currentTarget.style.background = 'rgba(0,255,136,0.10)';
+                                e.currentTarget.style.borderColor = 'rgba(0,255,136,0.22)';
                             }}
                             onMouseLeave={e => {
                                 e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
                                 e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
                             }}
                         >
-                            <div className="text-[#a855f7]/60 group-hover:text-[#a855f7] transition-colors w-12 h-12 mb-2">
+                            <div className="text-[#22c55e]/60 group-hover:text-[#22c55e] transition-colors w-12 h-12 mb-2">
                                 {a.icon}
                             </div>
                             <div>
@@ -278,7 +260,7 @@ const DecisionPhase: React.FC<{
             className="flex flex-col items-center justify-center text-center px-6 gap-6"
         >
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-[100px] pointer-events-none"
-                style={{ background: 'radial-gradient(circle, rgba(127,25,230,0.15) 0%, transparent 70%)' }}
+                style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.15) 0%, transparent 70%)' }}
             />
 
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight relative z-10">
@@ -312,10 +294,10 @@ const DecisionPhase: React.FC<{
                                     onDone();
                                 }
                             }}
-                            className="px-8 py-3.5 rounded-2xl text-base font-bold text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                            className="px-8 py-3.5 rounded-2xl text-base font-bold text-[#0f172a] transition-all hover:scale-105 active:scale-95 cursor-pointer"
                             style={{
-                                background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                                boxShadow: '0 8px 32px -4px rgba(127,25,230,0.4)',
+                                background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+                                boxShadow: '0 8px 32px -4px rgba(34,197,94,0.4)',
                             }}
                         >
                             Let's keep going
@@ -341,8 +323,8 @@ const DecisionPhase: React.FC<{
                                     border: '1px solid rgba(255,255,255,0.06)',
                                 }}
                                 onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'rgba(127,25,230,0.08)';
-                                    e.currentTarget.style.borderColor = 'rgba(127,25,230,0.2)';
+                                    e.currentTarget.style.background = 'rgba(34,197,94,0.06)';
+                                    e.currentTarget.style.borderColor = 'rgba(34,197,94,0.15)';
                                 }}
                                 onMouseLeave={e => {
                                     e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
@@ -351,9 +333,9 @@ const DecisionPhase: React.FC<{
                             >
                                 <div className="min-w-0">
                                     <p className="text-white font-semibold text-sm truncate">{task.title}</p>
-                                    <p className="text-white/30 text-xs mt-0.5">{formatDuration(task.estimatedSeconds)}</p>
+                                    <p className="text-white/30 text-xs mt-0.5">{task.pomodoroProfile ? `${task.pomodoroProfile.split('-')[0]}m` : '25m'} Pomodoro</p>
                                 </div>
-                                <svg className="w-5 h-5 text-[#a855f7]/40 group-hover:text-[#a855f7] transition-colors shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5 text-[#22c55e]/40 group-hover:text-[#22c55e] transition-colors shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M8 5v14l11-7z" />
                                 </svg>
                             </button>
@@ -382,123 +364,19 @@ const AllDonePhase: React.FC<{ onDone: () => void }> = ({ onDone }) => (
     >
         {/* Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[140px] pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(127,25,230,0.3) 0%, transparent 70%)' }}
+            style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.25) 0%, transparent 70%)' }}
         />
 
         {/* Celebration Animation Container */}
-        <div className="relative w-48 h-48 flex items-center justify-center">
-            {/* Pulsing sonar rings */}
-            {[0, 1, 2].map((i) => (
-                <motion.div
-                    key={`ring-${i}`}
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                        border: '1.5px solid rgba(168,85,247,0.3)',
-                    }}
-                    initial={{ scale: 0.5, opacity: 0.6 }}
-                    animate={{ scale: 2.2, opacity: 0 }}
-                    transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        delay: i * 1,
-                        ease: 'easeOut',
-                    }}
-                />
-            ))}
-
-            {/* Orbiting dots */}
-            {[
-                { size: 8, radius: 80, duration: 6, color: '#a855f7' },
-                { size: 6, radius: 90, duration: 8, color: '#c084fc' },
-                { size: 5, radius: 70, duration: 5, color: '#7c3aed' },
-                { size: 4, radius: 95, duration: 10, color: '#e9d5ff' },
-            ].map((dot, i) => (
-                <motion.div
-                    key={`orbit-${i}`}
-                    className="absolute rounded-full"
-                    style={{
-                        width: dot.size,
-                        height: dot.size,
-                        background: dot.color,
-                        boxShadow: `0 0 ${dot.size * 3}px ${dot.color}`,
-                        top: '50%',
-                        left: '50%',
-                        marginTop: -dot.size / 2,
-                        marginLeft: -dot.size / 2,
-                    }}
-                    animate={{
-                        x: [
-                            Math.cos(0) * dot.radius,
-                            Math.cos(Math.PI * 0.5) * dot.radius,
-                            Math.cos(Math.PI) * dot.radius,
-                            Math.cos(Math.PI * 1.5) * dot.radius,
-                            Math.cos(Math.PI * 2) * dot.radius,
-                        ],
-                        y: [
-                            Math.sin(0) * dot.radius,
-                            Math.sin(Math.PI * 0.5) * dot.radius,
-                            Math.sin(Math.PI) * dot.radius,
-                            Math.sin(Math.PI * 1.5) * dot.radius,
-                            Math.sin(Math.PI * 2) * dot.radius,
-                        ],
-                    }}
-                    transition={{
-                        duration: dot.duration,
-                        repeat: Infinity,
-                        ease: 'linear',
-                    }}
-                />
-            ))}
-
-            {/* Floating sparkle particles */}
-            {[...Array(6)].map((_, i) => (
-                <motion.div
-                    key={`sparkle-${i}`}
-                    className="absolute"
-                    style={{
-                        width: 3,
-                        height: 3,
-                        borderRadius: '50%',
-                        background: '#c084fc',
-                        left: `${20 + Math.random() * 60}%`,
-                        bottom: '10%',
-                    }}
-                    animate={{
-                        y: [-10, -120 - Math.random() * 60],
-                        x: [0, (Math.random() - 0.5) * 40],
-                        opacity: [0, 1, 0],
-                        scale: [0, 1.2, 0],
-                    }}
-                    transition={{
-                        duration: 2.5 + Math.random() * 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.5,
-                        ease: 'easeOut',
-                    }}
-                />
-            ))}
-
-            {/* Star icon — slow rotation */}
-            <motion.div
-                className="relative w-28 h-28 rounded-full flex items-center justify-center z-10"
-                style={{
-                    background: 'rgba(127,25,230,0.15)',
-                    border: '2px solid rgba(127,25,230,0.4)',
-                    boxShadow: '0 0 80px rgba(127,25,230,0.3)',
-                }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-            >
-                <motion.svg
-                    className="w-14 h-14 text-[#a855f7]"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    animate={{ scale: [1, 1.15, 1] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                >
+        {/* Celebration Animation Container */}
+        <div className="relative flex items-center justify-center mb-10 mt-6 z-10">
+            <div className="absolute w-48 h-48 bg-[#00ff88]/16 rounded-full blur-3xl mix-blend-screen"></div>
+            <div className="absolute w-32 h-32 bg-[#00ff88]/32 rounded-full blur-xl mix-blend-screen"></div>
+            <div className="relative w-32 h-32 rounded-full border-4 border-[#00ff88] flex items-center justify-center bg-[#0a0a0a] shadow-[0_0_50px_rgba(0,255,136,0.24)]">
+                <svg className="w-16 h-16 text-[#00ff88] -mt-1" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279L12 19.446l-7.416 3.967 1.48-8.279-6.064-5.828 8.332-1.151z" />
-                </motion.svg>
-            </motion.div>
+                </svg>
+            </div>
         </div>
 
         <div className="max-w-xl">
@@ -513,10 +391,10 @@ const AllDonePhase: React.FC<{ onDone: () => void }> = ({ onDone }) => (
         {/* Done button */}
         <button
             onClick={onDone}
-            className="mt-6 px-12 py-4 rounded-2xl text-base font-bold text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="mt-6 px-12 py-4 rounded-2xl text-base font-bold text-[#0f172a] transition-all hover:scale-105 active:scale-95 cursor-pointer"
             style={{
-                background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                boxShadow: '0 8px 32px -4px rgba(127,25,230,0.4)',
+                background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+                boxShadow: '0 8px 32px -4px rgba(34,197,94,0.4)',
             }}
         >
             Return to Dashboard
@@ -542,7 +420,7 @@ const GuidedBreak: React.FC<GuidedBreakProps> = ({
 }) => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
-            style={{ background: '#0d0814' }}
+            style={{ background: '#0a0a0a' }}
         >
             {/* Back to Dashboard - Top Left (matching TimerView) */}
             {phase !== 'active' && (

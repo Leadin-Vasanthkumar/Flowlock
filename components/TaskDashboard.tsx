@@ -1,425 +1,624 @@
 import React, { useState } from 'react';
-import { Task } from '../types';
-import AddTaskForm from './AddTaskForm';
-import EditTaskForm from './EditTaskForm';
-import GoalsPanel, { GoalData } from './GoalsPanel';
+import { Folder, TimeBlock } from '../types';
+import UserProfileMenu from './UserProfileMenu';
 import { motion, AnimatePresence } from 'framer-motion';
+import EditFolderForm from './EditFolderForm';
 
 interface TaskDashboardProps {
-    tasks: Task[];
-    activeTaskId: string | null;
-    onPlayTask: (id: string) => void;
-    onAddTask: (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; }) => Promise<void>;
-    onEditTask: (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string }) => Promise<void>;
-    onDeleteTask: (id: string) => void;
-    onToggleComplete: (id: string) => void;
+    folders: Folder[];
+    onAddFolder: (name: string, startTime?: string, endTime?: string, timeBlocks?: TimeBlock[]) => Promise<void>;
+    onUpdateFolder: (id: string, data: { name: string; startTime?: string; endTime?: string; timeBlocks?: TimeBlock[] }) => Promise<void>;
+    onSelectFolder: (folderId: string) => void;
+    onDeleteFolder: (folderId: string) => void;
+    onToggleFolderCompletion: (folderId: string) => void;
     loading?: boolean;
-    goals: GoalData;
-    onSaveGoal: (type: 'year' | 'month' | 'week' | 'day', content: string) => Promise<void>;
-    onSaveGoalImage: (type: 'year' | 'month' | 'week' | 'day', imageUrl: string | null) => Promise<void>;
     onStartBreak?: () => void;
+    currentView?: 'dashboard' | 'analysis';
+    onToggleView?: () => void;
 }
 
-const formatDuration = (totalSeconds: number): string => {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    if (h > 0 && m > 0) return `${h}h ${m}m`;
-    if (h > 0) return `${h}h`;
-    return `${m}m`;
-};
-
-const formatScheduledTime = (isoString: string): string => {
-    const d = new Date(isoString);
-    const now = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const isTomorrow = d.toDateString() === tomorrow.toDateString();
-
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const period = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    const timeStr = `${h}:${m.toString().padStart(2, '0')} ${period}`;
-
-    if (isToday) return `Today ${timeStr}`;
-    if (isTomorrow) return `Tomorrow ${timeStr}`;
-    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${timeStr}`;
-};
-
 const TaskDashboard: React.FC<TaskDashboardProps> = ({
-    tasks,
-    activeTaskId,
-    onPlayTask,
-    onAddTask,
-    onEditTask,
-    onDeleteTask,
-    onToggleComplete,
+    folders,
+    onAddFolder,
+    onSelectFolder,
+    onDeleteFolder,
+    onToggleFolderCompletion,
     loading,
-    goals,
-    onSaveGoal,
-    onSaveGoalImage,
     onStartBreak,
+    currentView,
+    onToggleView,
+    onUpdateFolder,
 }) => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [creating, setCreating] = useState(false);
-    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [showMobileGoals, setShowMobileGoals] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
+    const [newStartTime, setNewStartTime] = useState('');
+    const [newEndTime, setNewEndTime] = useState('');
+    const [newTimeBlocks, setNewTimeBlocks] = useState<TimeBlock[]>([]);
+    const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+    const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
 
-    const pendingTasks = tasks.filter(t => !t.completed);
-    const completedTasks = tasks.filter(t => t.completed);
+    const handleAddTimeBlock = () => {
+        setNewTimeBlocks([...newTimeBlocks, { startTime: '', endTime: '' }]);
+    };
 
-    const handleAdd = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number; blockId?: string; }) => {
+    const handleRemoveTimeBlock = (index: number) => {
+        setNewTimeBlocks(newTimeBlocks.filter((_, i) => i !== index));
+    };
+
+    const handleTimeChange = (index: number, field: keyof TimeBlock, value: string) => {
+        const updated = [...newTimeBlocks];
+        updated[index] = { ...updated[index], [field]: value };
+        setNewTimeBlocks(updated);
+    };
+
+    const handleAdd = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newFolderName.trim()) return;
         setCreating(true);
-        await onAddTask(data);
+        
+        const validBlocks = [...newTimeBlocks];
+        if (newStartTime && newEndTime) {
+            validBlocks.unshift({ startTime: newStartTime, endTime: newEndTime });
+        }
+        
+        await onAddFolder(
+            newFolderName.trim(), 
+            undefined, 
+            undefined,
+            validBlocks
+        );
+        setNewFolderName('');
+        setNewStartTime('');
+        setNewEndTime('');
+        setNewTimeBlocks([]);
         setCreating(false);
         setShowAddForm(false);
     };
 
-    const today = new Date();
-    const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening';
-    const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    // Sort folders: incomplete habits first, then others, then completed today
+    const sortedFolders = [...folders].sort((a, b) => {
+        if (a.isCompletedToday === b.isCompletedToday) return 0;
+        return a.isCompletedToday ? 1 : -1;
+    });
 
     return (
-        <div className="relative h-full w-full grid grid-cols-1 lg:grid-cols-2 overflow-hidden pt-0">
-
-            {/* Left Column: Tasks */}
-            <div className="flex flex-col px-4 sm:px-6 md:px-12 pt-24 sm:pt-28 pb-8 sm:pb-12 overflow-y-auto">
-
-                {/* Header */}
-                <div className="mb-10 flex items-end justify-between">
-                    <div>
-                        <p className="text-slate-500 text-sm font-medium mb-1">{dateStr}</p>
-                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">{greeting}</h1>
+        <div className="flex flex-col h-full w-full px-4 sm:px-6 md:px-10 pt-6 sm:pt-10 pb-8 sm:pb-12 overflow-y-auto">
+            {/* Header Row */}
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3 pointer-events-auto">
+                    <div className="w-10 h-10 rounded-xl shrink-0 border border-white/10 overflow-hidden shadow-[0_0_12px_rgba(34,197,94,0.3)]">
+                        <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
                     </div>
-                    {onStartBreak && (
-                        <button
-                            onClick={onStartBreak}
-                            className="group flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer"
-                            style={{
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                color: 'rgba(255,255,255,0.7)'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                                e.currentTarget.style.color = 'white';
-                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                            }}
-                        >
-                            <svg className="w-4 h-4 text-[#a855f7] opacity-70 group-hover:opacity-100 transition-opacity shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            Take a Break
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-xl font-bold tracking-tight text-white shadow-sm">Flowlock</span>
+                        <span className="px-2 py-0.5 rounded bg-[#22C55E]/10 text-[#22C55E] text-[10px] font-bold tracking-wider uppercase">Beta</span>
+                    </div>
                 </div>
 
-                {/* Add Task Button / Form */}
-                <AnimatePresence mode="wait">
-                    {showAddForm ? (
-                        <motion.div
-                            key="form"
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.2 }}
-                            className="w-full max-w-2xl mb-8 rounded-3xl p-6 md:p-8"
-                            style={{
-                                background: 'rgba(255,255,255,0.03)',
-                                backdropFilter: 'blur(24px)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                            }}
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    {onToggleView && (
+                        <button
+                            onClick={onToggleView}
+                            className="group flex items-center gap-2 px-4 py-2 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/5 text-[#22C55E] text-xs font-bold uppercase tracking-widest hover:bg-[#22C55E]/10 hover:border-[#22C55E]/60 transition-all duration-300 cursor-pointer shadow-[0_0_15px_-5px_rgba(34,197,94,0.2)] hover:shadow-[0_0_20px_-2px_rgba(34,197,94,0.3)] active:scale-95"
                         >
-                            <h3 className="text-lg font-semibold text-white mb-5">New Task</h3>
-                            <AddTaskForm onSubmit={handleAdd} onCancel={() => setShowAddForm(false)} loading={creating} />
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <span>Analysis</span>
+                        </button>
+                    )}
+                    <UserProfileMenu />
+                </div>
+            </div>
+
+            {/* Subtitle Area */}
+            <div className="mb-10 flex items-end justify-between">
+                <div>
+                    <h2 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Your Folders</h2>
+                    <p className="text-[#909AA6] font-medium text-lg">Organize your focus sessions.</p>
+                </div>
+                {onStartBreak && (
+                    <button
+                        onClick={onStartBreak}
+                        className="group flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer"
+                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                            e.currentTarget.style.color = 'white';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                        }}
+                    >
+                        <svg className="w-4 h-4 text-[#22C55E] opacity-70 group-hover:opacity-100 transition-opacity shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Take a Break
+                    </button>
+                )}
+            </div>
+
+            {/* New Block Button */}
+            <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowAddForm(true)}
+                className="w-full py-8 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-2 group hover:border-[#22C55E]/50 transition-all cursor-pointer mb-12 bg-white/[0.02] hover:bg-white/[0.05]"
+            >
+                <div className="p-2 rounded-xl bg-white/5 group-hover:bg-[#22C55E]/10 transition-colors">
+                    <svg className="w-5 h-5 text-[#909AA6] group-hover:text-[#22C55E] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </div>
+                <span className="text-[#909AA6] font-bold group-hover:text-white transition-colors uppercase tracking-widest text-xs">Create New Block</span>
+            </motion.button>
+
+            {/* Folders List */}
+            <div className="w-full max-w-4xl space-y-3 flex-1 pb-10">
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-[#22C55E] animate-spin" />
+                    </div>
+                ) : sortedFolders.length === 0 ? (
+                    <div className="text-center py-20">
+                        <p className="text-[#909AA6] text-sm font-medium">No folders yet. Create a block to organize your tasks.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
+                        <AnimatePresence>
+                            {sortedFolders.map((folder, i) => {
+                                const canComplete = folder.progress === 0;
+                                
+                                return (
+                                    <motion.div
+                                        key={folder.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ 
+                                            opacity: folder.isCompletedToday ? 0.6 : 1, 
+                                            y: 0 
+                                        }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.4, delay: i * 0.05 }}
+                                        onClick={() => onSelectFolder(folder.id)}
+                                        className={`group p-8 rounded-[2rem] transition-all duration-500 cursor-pointer relative flex flex-col h-[280px] overflow-hidden ${
+                                            folder.isCompletedToday 
+                                            ? 'bg-white/[0.02] border-white/5 grayscale-[0.5]' 
+                                            : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/10 hover:border-[#22C55E]/30'
+                                        } border backdrop-blur-xl shadow-2xl`}
+                                    >
+                                        {/* Background hover glow */}
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#22C55E]/5 blur-[60px] -mr-16 -mt-16 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                                        
+                                        <div className="absolute top-6 right-6 z-30 flex items-center gap-2">
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onPointerDownCapture={(e) => e.stopPropagation()}
+                                                onClickCapture={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    setEditingFolderId(folder.id);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 p-2.5 text-[#909AA6] hover:text-[#22C55E] transition-all cursor-pointer rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 relative z-30 pointer-events-auto"
+                                                title="Edit folder"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 015.25 6H10" />
+                                                </svg>
+                                            </motion.button>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onPointerDownCapture={(e) => e.stopPropagation()}
+                                                onClickCapture={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    setDeletingFolderId(folder.id);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 p-2.5 text-[#909AA6] hover:text-red-400 transition-all cursor-pointer rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 relative z-30 pointer-events-auto"
+                                                title="Delete folder"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </motion.button>
+                                        </div>
+
+                                        <div className="flex flex-col h-full relative z-10 w-full">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                {/* Circular Checklist Button */}
+                                                <div className="pointer-events-auto">
+                                                    <motion.button
+                                                        whileHover={canComplete || folder.isCompletedToday ? { scale: 1.1 } : {}}
+                                                        whileTap={canComplete || folder.isCompletedToday ? { scale: 0.9 } : {}}
+                                                        onPointerDownCapture={(e) => e.stopPropagation()}
+                                                        onClickCapture={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            if (canComplete || folder.isCompletedToday) {
+                                                                onToggleFolderCompletion(folder.id);
+                                                            }
+                                                        }}
+                                                        disabled={!canComplete && !folder.isCompletedToday}
+                                                        className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all duration-500 relative shrink-0 ${
+                                                            folder.isCompletedToday
+                                                            ? 'bg-[#22C55E]/20 border-[#22C55E] text-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.4)]'
+                                                            : canComplete
+                                                            ? 'bg-white/5 border-white/20 hover:border-[#22C55E] hover:bg-[#22C55E]/10 group/check'
+                                                            : 'bg-white/[0.02] border-white/5 text-transparent cursor-not-allowed opacity-20'
+                                                        }`}
+                                                    >
+                                                        <svg 
+                                                            className={`w-5 h-5 transition-all duration-500 ${
+                                                                folder.isCompletedToday ? 'opacity-100 scale-110' : 'opacity-0 scale-75 group-hover/check:opacity-100 group-hover/check:scale-100'
+                                                            }`} 
+                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}
+                                                        >
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </motion.button>
+                                                </div>
+
+                                                <div className="flex flex-col min-w-0">
+                                                    <h3 className={`text-2xl font-black tracking-tight transition-colors truncate ${
+                                                        folder.isCompletedToday ? 'text-[#22C55E]' : 'text-white'
+                                                    }`}>
+                                                        {folder.name}
+                                                    </h3>
+                                                    {folder.isCompletedToday && (
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#22C55E]/60 -mt-0.5">COMPLETED TODAY</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex-1 mb-6">
+                                                {folder.description ? (
+                                                    <p className={`text-sm leading-relaxed line-clamp-3 min-h-[4.2rem] whitespace-pre-wrap transition-colors duration-500 ${
+                                                        folder.isCompletedToday ? 'text-white/20' : 'text-white/50 group-hover:text-white/70'
+                                                    }`}>
+                                                        {folder.description}
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-white/10 text-xs italic min-h-[4.2rem] flex items-center">
+                                                        No session intent defined yet.
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-auto flex items-center justify-between">
+                                                <div className="flex flex-col gap-2">
+                                                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md transition-all duration-500 ${
+                                                                folder.isCompletedToday 
+                                                                ? 'bg-white/5 text-white/40' 
+                                                                : 'bg-[#22C55E]/5 text-[#22C55E] border border-[#22C55E]/10'
+                                                            }`}>
+                                                                {!folder.isCompletedToday && (
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+                                                                )}
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                                                    {folder.isCompletedToday ? 'SESSION CLOSED' : 'IN PROGRESS'}
+                                                                </span>
+                                                                <span className="w-px h-2.5 bg-current/20 mx-1" />
+                                                                <span className="text-[10px] font-black">{folder.progress} TASKS LEFT</span>
+                                                            </div>
+                                                            
+                                                            {((folder.timeBlocks && folder.timeBlocks.length > 0) || folder.startTime) && (
+                                                                <div className="flex flex-col gap-1.5 ml-1">
+                                                                    {(folder.timeBlocks && folder.timeBlocks.length > 0) ? (
+                                                                        folder.timeBlocks.map((block, idx) => (
+                                                                            <div key={idx} className="flex items-center gap-1.5 text-white/30">
+                                                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                                </svg>
+                                                                                <span className="text-[10px] font-black tracking-tighter uppercase tabular-nums">
+                                                                                    {block.startTime.slice(0, 5)} - {block.endTime.slice(0, 5)}
+                                                                                </span>
+                                                                            </div>
+                                                                        ))
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-1.5 text-white/30">
+                                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                            </svg>
+                                                                            <span className="text-[10px] font-black tracking-tighter uppercase tabular-nums">
+                                                                                {folder.startTime?.slice(0, 5)} - {folder.endTime?.slice(0, 5)}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Completion overlay effect */}
+                                        {folder.isCompletedToday && (
+                                            <div className="absolute inset-0 rounded-2xl border-2 border-[#22C55E]/10 pointer-events-none" />
+                                        )}
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </div>
+                )}
+            </div>
+            {/* Pop-ups / Modals */}
+            <AnimatePresence>
+                {/* Create Modal */}
+                {showAddForm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0D0E0D]/80 backdrop-blur-xl"
+                        onClick={() => setShowAddForm(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-xl bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#22C55E]/5 blur-[80px] -mr-32 -mt-32 rounded-full" />
+                            
+                            <div className="flex items-center justify-between mb-10 relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-2xl bg-[#22C55E]/10 border border-[#22C55E]/20">
+                                        <svg className="w-6 h-6 text-[#22C55E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-white tracking-tight">Create New Block</h2>
+                                        <p className="text-white/30 text-xs font-bold uppercase tracking-widest mt-1">Organize your focus session</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setShowAddForm(false)}
+                                    className="p-2 rounded-full hover:bg-white/5 text-white/20 hover:text-white transition-all"
+                                >
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleAdd} className="space-y-8 relative z-10">
+                                {/* Folder Name Input */}
+                                <div className="space-y-3">
+                                    <label className="text-[11px] font-black text-white/30 uppercase tracking-[0.2em] ml-1">Block Name</label>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        placeholder="What are we focusing on?"
+                                        value={newFolderName}
+                                        onChange={(e) => setNewFolderName(e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-6 py-5 text-white placeholder:text-white/20 outline-none focus:border-[#22C55E]/40 focus:bg-white/[0.05] transition-all duration-300 text-lg font-medium"
+                                    />
+                                </div>
+
+                                {/* Work Blocks Section */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between px-1">
+                                        <label className="text-[11px] font-black text-white/30 uppercase tracking-[0.2em]">Execution Times</label>
+                                        <motion.button 
+                                            type="button"
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={handleAddTimeBlock}
+                                            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/20 text-[#22C55E] text-[10px] font-black uppercase tracking-widest hover:bg-[#22C55E]/20 transition-all cursor-pointer"
+                                        >
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                            </svg>
+                                            Add Time Slot
+                                        </motion.button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-bold text-white/20 uppercase tracking-widest ml-1 text-center block">Start</label>
+                                                <input
+                                                    type="time"
+                                                    value={newStartTime}
+                                                    onChange={(e) => setNewStartTime(e.target.value)}
+                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-5 py-4 text-white outline-none focus:border-[#22C55E]/30 transition-all [color-scheme:dark] text-center font-bold"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-bold text-white/20 uppercase tracking-widest ml-1 text-center block">End</label>
+                                                <input
+                                                    type="time"
+                                                    value={newEndTime}
+                                                    onChange={(e) => setNewEndTime(e.target.value)}
+                                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-5 py-4 text-white outline-none focus:border-[#22C55E]/30 transition-all [color-scheme:dark] text-center font-bold"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {newTimeBlocks.map((block, index) => (
+                                                <motion.div 
+                                                    key={index}
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    className="grid grid-cols-[1fr,1fr,auto] gap-3 items-end"
+                                                >
+                                                    <div className="space-y-2">
+                                                        <input
+                                                            type="time"
+                                                            value={block.startTime}
+                                                            onChange={(e) => handleTimeChange(index, 'startTime', e.target.value)}
+                                                            className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#22C55E]/30 transition-all [color-scheme:dark] text-center font-bold"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <input
+                                                            type="time"
+                                                            value={block.endTime}
+                                                            onChange={(e) => handleTimeChange(index, 'endTime', e.target.value)}
+                                                            className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#22C55E]/30 transition-all [color-scheme:dark] text-center font-bold"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveTimeBlock(index)}
+                                                        className="p-3 rounded-xl border border-white/5 text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all cursor-pointer"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 pt-4">
+                                    <motion.button
+                                        type="submit"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        disabled={creating || !newFolderName.trim()}
+                                        className="flex-[2] bg-[#22C55E] text-[#0D0E0D] rounded-2xl py-5 font-black uppercase tracking-widest text-xs hover:bg-[#22C55E]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)]"
+                                    >
+                                        {creating ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-[#0D0E0D]/30 border-t-[#0D0E0D] rounded-full animate-spin" />
+                                                <span>Building...</span>
+                                            </div>
+                                        ) : 'Launch Block'}
+                                    </motion.button>
+                                    <motion.button
+                                        type="button"
+                                        whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setShowAddForm(false)}
+                                        className="flex-1 px-8 py-5 rounded-2xl border border-white/10 text-white text-xs font-black uppercase tracking-widest hover:border-white/20 transition-all cursor-pointer"
+                                    >
+                                        Skip
+                                    </motion.button>
+                                </div>
+                            </form>
                         </motion.div>
-                    ) : (
-                        <motion.button
-                            key="button"
+                    </motion.div>
+                )}
+
+                {/* Edit Modal */}
+                {editingFolderId && (() => {
+                    const folder = folders.find(f => f.id === editingFolderId);
+                    if (!folder) return null;
+                    return (
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setShowAddForm(true)}
-                            className="group w-full max-w-2xl mb-8 py-4 px-6 rounded-2xl flex items-center gap-3 text-sm font-medium text-slate-500 hover:text-white transition-all"
-                            style={{
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.06)',
-                            }}
+                            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0D0E0D]/80 backdrop-blur-xl"
+                            onClick={() => setEditingFolderId(null)}
                         >
-                            <svg className="w-5 h-5 text-slate-600 group-hover:text-[#7f19e6] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add a task
-                        </motion.button>
-                    )}
-                </AnimatePresence>
-
-                {/* Pending Tasks */}
-                <div className="w-full max-w-2xl space-y-3 flex-1">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-20">
-                            <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-[#7f19e6] animate-spin" />
-                        </div>
-                    ) : pendingTasks.length === 0 && !showAddForm ? (
-                        <div className="text-center py-20">
-                            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                                style={{ background: 'rgba(127,25,230,0.1)', border: '1px solid rgba(127,25,230,0.2)' }}>
-                                <svg className="w-8 h-8 text-[#7f19e6]/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                </svg>
-                            </div>
-                            <p className="text-slate-500 text-sm">No tasks yet. Add one to get started.</p>
-                        </div>
-                    ) : (
-                        <AnimatePresence>
-                            {pendingTasks.map((task, i) => (
-                                <motion.div
-                                    key={task.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    transition={{ duration: 0.2, delay: i * 0.03 }}
-                                    className={`group rounded-2xl p-5 flex items-start gap-4 transition-all ${activeTaskId === task.id
-                                        ? 'ring-1 ring-[#7f19e6]/40'
-                                        : ''
-                                        }`}
-                                    style={{
-                                        background: activeTaskId === task.id ? 'rgba(127,25,230,0.08)' : 'rgba(255,255,255,0.03)',
-                                        border: '1px solid rgba(255,255,255,0.06)',
-                                    }}
-                                >
-                                    {/* Checkbox */}
-                                    <button
-                                        onClick={() => onToggleComplete(task.id)}
-                                        className="mt-0.5 w-5 h-5 rounded-md border border-white/15 hover:border-[#7f19e6]/50 flex-shrink-0 flex items-center justify-center transition-colors hover:bg-[#7f19e6]/10"
-                                    />
-
-                                    {/* Content */}
-                                    {editingTaskId === task.id ? (
-                                        <div className="flex-1 min-w-0">
-                                            <EditTaskForm
-                                                task={task}
-                                                saving={saving}
-                                                onSave={async (data) => {
-                                                    setSaving(true);
-                                                    await onEditTask(task.id, data);
-                                                    setSaving(false);
-                                                    setEditingTaskId(null);
-                                                }}
-                                                onCancel={() => setEditingTaskId(null)}
-
-                                            />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-white font-semibold text-sm leading-snug mb-1.5">{task.title}</h4>
-                                                <div className="flex flex-wrap items-center gap-3">
-                                                    {/* Duration tag */}
-                                                    {task.estimatedSeconds > 0 && (
-                                                        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                            </svg>
-                                                            {formatDuration(task.estimatedSeconds)}
-                                                        </span>
-                                                    )}
-                                                    {/* Habit tag */}
-                                                    {task.habitId && (
-                                                        <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: '#ec4899' }}>
-                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                            </svg>
-                                                            Habit
-                                                        </span>
-                                                    )}
-                                                    {/* Location tag */}
-                                                    {task.location && (
-                                                        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                                                            </svg>
-                                                            {task.location}
-                                                        </span>
-                                                    )}
-                                                    {/* Scheduled time tag */}
-                                                    {task.scheduledAt && (
-                                                        <span className="inline-flex items-center gap-1 text-xs" style={{ color: '#a855f7' }}>
-                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                                            </svg>
-                                                            {formatScheduledTime(task.scheduledAt)}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {/* Purpose */}
-                                                {task.purpose && (
-                                                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{task.purpose}</p>
-                                                )}
-                                            </div>
-
-                                            {/* Actions */}
-                                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                {/* Edit */}
-                                                <button
-                                                    onClick={() => setEditingTaskId(task.id)}
-                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-slate-600 hover:text-[#a855f7] transition-all cursor-pointer"
-                                                    title="Edit task"
-                                                    aria-label="Edit task"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                                    </svg>
-                                                </button>
-                                                {/* Delete */}
-                                                <button
-                                                    onClick={() => onDeleteTask(task.id)}
-                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-slate-600 hover:text-red-400 transition-all cursor-pointer"
-                                                    title="Delete task"
-                                                    aria-label="Delete task"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
-                                                {/* Play */}
-                                                {task.estimatedSeconds > 0 && (
-                                                    <button
-                                                        onClick={() => onPlayTask(task.id)}
-                                                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                                                        style={{
-                                                            background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                                                            boxShadow: '0 4px 16px -2px rgba(127,25,230,0.35)',
-                                                        }}
-                                                        title="Start timer"
-                                                        aria-label="Start timer"
-                                                    >
-                                                        <svg className="w-4 h-4 text-white translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
-                                                            <path d="M8 5v14l11-7z" />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </>
-                                    )}
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    )}
-
-                    {/* Completed Tasks */}
-                    {completedTasks.length > 0 && (
-                        <div className="mt-10">
-                            <p className="text-xs text-slate-600 uppercase tracking-widest font-bold mb-3 ml-1">
-                                Completed · {completedTasks.length}
-                            </p>
-                            <div className="space-y-2">
-                                {completedTasks.map(task => (
-                                    <div
-                                        key={task.id}
-                                        className="group rounded-2xl px-5 py-3.5 flex items-center gap-4 transition-all"
-                                        style={{
-                                            background: 'rgba(255,255,255,0.015)',
-                                            border: '1px solid rgba(255,255,255,0.04)',
-                                        }}
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full max-w-xl bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden"
+                            >
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-[#22C55E]/5 blur-[80px] -mr-32 -mt-32 rounded-full" />
+                                
+                                <div className="flex items-center justify-between mb-8 relative z-10">
+                                    <h2 className="text-2xl font-black text-white tracking-tight">Edit Work Block</h2>
+                                    <button 
+                                        onClick={() => setEditingFolderId(null)}
+                                        className="p-2 rounded-full hover:bg-white/5 text-white/20 hover:text-white transition-all"
                                     >
-                                        <button
-                                            onClick={() => onToggleComplete(task.id)}
-                                            className="w-5 h-5 rounded-md bg-[#7f19e6]/20 border border-[#7f19e6]/30 flex-shrink-0 flex items-center justify-center"
-                                        >
-                                            <svg className="w-3 h-3 text-[#7f19e6]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </button>
-                                        <span className="text-sm text-slate-600 line-through flex-1">{task.title}</span>
-                                        {task.estimatedSeconds > 0 && (
-                                            <span className="text-xs text-slate-700">{formatDuration(task.estimatedSeconds)}</span>
-                                        )}
-                                        <button
-                                            onClick={() => onDeleteTask(task.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-700 hover:text-red-400 transition-all"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
 
+                                <EditFolderForm
+                                    folder={folder}
+                                    loading={isUpdating}
+                                    onCancel={() => setEditingFolderId(null)}
+                                    onSave={async (data) => {
+                                        setIsUpdating(true);
+                                        await onUpdateFolder(folder.id, data);
+                                        setIsUpdating(false);
+                                        setEditingFolderId(null);
+                                    }}
+                                />
+                            </motion.div>
+                        </motion.div>
+                    );
+                })()}
 
-            </div>
-
-            {/* Right Column: Goals (Desktop) */}
-            <div className="hidden lg:block border-l overflow-y-auto" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                <GoalsPanel goals={goals} onSaveGoal={onSaveGoal} onSaveGoalImage={onSaveGoalImage} />
-            </div>
-
-            {/* Mobile Goals FAB */}
-            <button
-                onClick={() => setShowMobileGoals(true)}
-                className="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-transform cursor-pointer"
-                style={{
-                    background: 'linear-gradient(135deg, #7f19e6 0%, #a855f7 100%)',
-                    boxShadow: '0 8px 32px -4px rgba(127,25,230,0.5)',
-                }}
-                aria-label="View Goals"
-                title="Goals"
-            >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <circle cx="12" cy="12" r="6" />
-                    <circle cx="12" cy="12" r="2" />
-                </svg>
-            </button>
-
-            {/* Mobile Goals Overlay */}
-            {showMobileGoals && (
-                <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
-                    {/* Backdrop */}
-                    <div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        onClick={() => setShowMobileGoals(false)}
-                    />
-                    {/* Panel */}
-                    <div
-                        className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-3xl"
-                        style={{
-                            background: '#0d0814',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderBottom: 'none',
-                        }}
-                    >
-                        {/* Handle bar */}
-                        <div className="flex justify-center pt-3 pb-1">
-                            <div className="w-10 h-1 rounded-full bg-white/15" />
-                        </div>
-                        {/* Close button */}
-                        <button
-                            onClick={() => setShowMobileGoals(false)}
-                            className="absolute top-4 right-4 p-2 text-white/40 hover:text-white transition-colors cursor-pointer"
-                            aria-label="Close Goals"
+                {/* Delete Confirmation Modal */}
+                {deletingFolderId && (() => {
+                    const folder = folders.find(f => f.id === deletingFolderId);
+                    if (!folder) return null;
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0D0E0D]/90 backdrop-blur-2xl"
+                            onClick={() => setDeletingFolderId(null)}
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                        <GoalsPanel goals={goals} onSaveGoal={onSaveGoal} onSaveGoalImage={onSaveGoalImage} />
-                    </div>
-                </div>
-            )}
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full max-w-md bg-[#1A1A1A] border border-white/5 rounded-[2rem] p-10 shadow-2xl relative overflow-hidden text-center"
+                            >
+                                <div className="w-20 h-20 rounded-3xl bg-red-400/10 flex items-center justify-center text-red-400 mx-auto mb-6 border border-red-400/20">
+                                    <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </div>
+                                
+                                <h2 className="text-2xl font-black text-white tracking-tight mb-3">Delete "{folder.name}"?</h2>
+                                <p className="text-white/40 text-sm leading-relaxed mb-10">
+                                    This action cannot be undone. All tasks inside this folder will also be permanently deleted.
+                                </p>
+
+                                <div className="flex flex-col gap-3">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => {
+                                            onDeleteFolder(folder.id);
+                                            setDeletingFolderId(null);
+                                        }}
+                                        className="w-full bg-red-500 text-white rounded-2xl py-4 font-black uppercase tracking-widest text-xs hover:bg-red-600 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                                    >
+                                        Yes, Delete Folder
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setDeletingFolderId(null)}
+                                        className="w-full bg-white/5 text-white/40 rounded-2xl py-4 font-black uppercase tracking-widest text-xs hover:bg-white/10 hover:text-white transition-all"
+                                    >
+                                        Cancel
+                                    </motion.button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    );
+                })()}
+            </AnimatePresence>
         </div>
     );
 };

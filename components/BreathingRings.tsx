@@ -6,20 +6,17 @@ interface BreathingRingsProps {
 }
 
 const BreathingRings: React.FC<BreathingRingsProps> = ({ color = 'purple' }) => {
-  const colorClass = color === 'cyan' ? 'border-cyan-500' : 'border-white';
-  const glowClass = color === 'cyan' ? 'bg-cyan-600/10' : 'bg-purple-600/10';
-
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-      {/* Outer Ring */}
-      <div className={`absolute w-[600px] h-[600px] border rounded-full animate-breathe-more-delayed transition-colors duration-1000 ${color === 'cyan' ? 'border-cyan-500/30' : 'border-white/30'}`} />
-      {/* Middle Ring */}
-      <div className={`absolute w-[450px] h-[450px] border rounded-full animate-breathe-delayed transition-colors duration-1000 ${color === 'cyan' ? 'border-cyan-500/50' : 'border-white/50'}`} />
-      {/* Inner Ring */}
-      <div className={`absolute w-[300px] h-[300px] border rounded-full animate-breathe transition-colors duration-1000 ${color === 'cyan' ? 'border-cyan-500/70' : 'border-white/70'}`} />
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* Base Inner Ring */}
+      <div className="absolute w-[320px] h-[320px] rounded-full border-2 border-[#22C55E]/20" />
 
-      {/* Background Glow */}
-      <div className={`absolute w-[400px] h-[400px] blur-[100px] rounded-full transition-colors duration-1000 ${glowClass}`} />
+      {/* Breathing Rings */}
+      <div className="absolute w-[320px] h-[320px] rounded-full border border-[#22C55E] animate-breathe" />
+      <div className="absolute w-[420px] h-[420px] rounded-full border border-[#22C55E] animate-breathe-delayed" />
+
+      {/* Background Glow - Ambient green halo */}
+      <div className="absolute w-[500px] h-[500px] blur-[180px] rounded-full bg-[#22C55E]/[0.07]" />
     </div>
   );
 };

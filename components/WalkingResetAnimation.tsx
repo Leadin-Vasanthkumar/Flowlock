@@ -69,7 +69,7 @@ const PreFlightScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => (
             />
             <div
                 className="absolute bottom-0 right-1/4 w-[350px] h-[350px] rounded-full blur-[120px] animate-pulse"
-                style={{ background: 'rgba(168,85,247,0.07)', animationDuration: '9s', animationDelay: '1s' }}
+                style={{ background: 'rgba(34,197,94,0.07)', animationDuration: '9s', animationDelay: '1s' }}
             />
         </div>
 
@@ -162,7 +162,7 @@ const ActiveTimerScreen: React.FC<{ seconds: number; onSkip: () => void }> = ({ 
                 />
                 <div
                     className="absolute bottom-0 right-1/4 w-[350px] h-[350px] rounded-full blur-[120px] animate-pulse"
-                    style={{ background: 'rgba(168,85,247,0.07)', animationDuration: '9s', animationDelay: '1s' }}
+                    style={{ background: 'rgba(34,197,94,0.07)', animationDuration: '9s', animationDelay: '1s' }}
                 />
             </div>
 
@@ -197,7 +197,7 @@ const ActiveTimerScreen: React.FC<{ seconds: number; onSkip: () => void }> = ({ 
             {/* Skip button */}
             <button
                 onClick={onSkip}
-                className="relative z-10 mt-2 text-xs text-white/20 hover:text-white/50 transition-colors cursor-pointer uppercase tracking-widest"
+                className="relative z-10 mt-2 text-xs text-white/40 hover:text-white/60 transition-colors cursor-pointer uppercase tracking-widest"
             >
                 Skip break
             </button>

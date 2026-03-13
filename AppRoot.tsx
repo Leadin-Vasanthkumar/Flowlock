@@ -29,8 +29,8 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full bg-[#0d0814] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#7f19e6] animate-spin"></div>
+      <div className="min-h-screen w-full bg-[#0D0E0D] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#22C55E] animate-spin"></div>
       </div>
     );
   }

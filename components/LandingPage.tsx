@@ -61,9 +61,7 @@ const icons = {
         </svg>
     ),
     logo: (
-        <svg width="28" height="28" fill="white" viewBox="0 0 48 48">
-            <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" />
-        </svg>
+        <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
     ),
 };
 
@@ -175,8 +173,8 @@ const LandingPage: React.FC = () => {
             >
                 {/* Logo */}
                 <button onClick={() => scrollTo('hero')} className="flex items-center gap-2.5 cursor-pointer" aria-label="Back to top">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7f19e6, #a855f7)' }}>
-                        <svg width="18" height="18" fill="white" viewBox="0 0 48 48"><path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" /></svg>
+                    <div className="w-8 h-8 rounded-xl border border-white/10 overflow-hidden shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+                        <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-base font-bold tracking-tight text-white">Flowlock</span>
@@ -535,8 +533,8 @@ const LandingPage: React.FC = () => {
             <footer className="border-t py-10 px-6" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7f19e6, #a855f7)' }}>
-                            <svg width="12" height="12" fill="white" viewBox="0 0 48 48"><path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" /></svg>
+                        <div className="w-6 h-6 rounded-md border border-white/10 overflow-hidden shadow-[0_0_8px_rgba(34,197,94,0.3)]">
+                            <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
                         </div>
                         <span className="text-sm font-semibold text-slate-500">Flowlock</span>
                     </div>

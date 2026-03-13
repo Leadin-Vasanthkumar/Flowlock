@@ -60,10 +60,8 @@ const SignUpPage: React.FC = () => {
             {/* ── Minimal nav ── */}
             <nav className="fixed top-0 left-0 right-0 px-8 py-6 flex justify-between items-center z-50">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-[#7f19e6] rounded-lg flex items-center justify-center shadow-lg shadow-[#7f19e6]/30">
-                        <svg className="w-5 h-5" fill="white" viewBox="0 0 48 48">
-                            <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" />
-                        </svg>
+                    <div className="w-8 h-8 rounded-lg border border-white/10 overflow-hidden shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+                        <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
                     </div>
                     <span className="text-xl font-bold tracking-tight">Flowlock</span>
                 </div>

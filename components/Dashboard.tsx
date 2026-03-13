@@ -1,144 +1,132 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TaskDashboard from './TaskDashboard';
+import FolderView from './FolderView';
+import ResizableLayout from './ResizableLayout';
 import TimerView from './TimerView';
 import GuidedBreak, { BreakPhase, BreakActivity } from './GuidedBreak';
+import GoalsPanel, { GoalData } from './GoalsPanel';
 import AnalysisPage from './AnalysisPage';
 import UserProfileMenu from './UserProfileMenu';
-import { GoalData } from './GoalsPanel';
-import { Task, TimerStatus } from '../types';
+import { Task, TimerStatus, PomodoroProfile, Folder, RecurrenceType, TimeBlock } from '../types';
 import { supabase } from '../lib/supabase';
 
 type ViewType = 'dashboard' | 'timer' | 'guided-break' | 'analysis';
 
 const Dashboard: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [folders, setFolders] = useState<Folder[]>([]);
+    const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
     const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
     const [timerStatus, setTimerStatus] = useState<TimerStatus>('idle');
     const [seconds, setSeconds] = useState(0);
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
     const [loading, setLoading] = useState(true);
-    const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', day: '', yearImage: undefined, monthImage: undefined, weekImage: undefined, dayImage: undefined });
-
+    const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', yearImage: undefined, monthImage: undefined, weekImage: undefined });
+    const [showMobileGoals, setShowMobileGoals] = useState(false);
+    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const endTimeRef = useRef<number>(0);
     const rafRef = useRef<number | null>(null);
     const audioCtx = useRef<AudioContext | null>(null);
-    const generatingHabitsRef = useRef<boolean>(false);
 
     // Guided break state
     const [breakPhase, setBreakPhase] = useState<BreakPhase>('victory');
     const [breakActivity, setBreakActivity] = useState<BreakActivity | null>(null);
     const [breakSeconds, setBreakSeconds] = useState(300); // 5 minutes
     const [completedTaskName, setCompletedTaskName] = useState('');
+    const [autoContinueTaskId, setAutoContinueTaskId] = useState<string | null>(null);
 
     // Fetch initial data
     useEffect(() => {
         fetchTasks();
+        fetchFolders();
         fetchGoals();
     }, []);
+
+    // Handle daily reset at midnight
+    useEffect(() => {
+        const now = new Date();
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+        const timeUntilMidnight = midnight.getTime() - now.getTime();
+
+        const timer = setTimeout(() => {
+            fetchTasks();
+            fetchFolders();
+        }, timeUntilMidnight);
+
+        return () => clearTimeout(timer);
+    }, [tasks, folders]); // Re-set timer if data changes
 
     const fetchTasks = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // --- DAILY AUTO-RESET: delete stale todos from previous days ---
+            // --- DAILY AUTO-RESET: handle recurring vs one-time tasks ---
             const todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
-            const { data: existingTodos } = await supabase
+            
+            const { data: staleTasks } = await supabase
                 .from('todos')
-                .select('id, inserted_at')
-                .eq('user_id', user.id)
-                .limit(1);
-            if (existingTodos && existingTodos.length > 0) {
-                const oldestDate = new Date(existingTodos[0].inserted_at);
-                if (oldestDate < todayStart) {
-                    // Stale todos found — wipe everything from previous days
-                    await supabase.from('todos').delete().eq('user_id', user.id);
+                .select('id, inserted_at, recurrence_type')
+                .eq('user_id', user.id);
+
+            if (staleTasks && staleTasks.length > 0) {
+                const hasStale = staleTasks.some(t => new Date(t.inserted_at) < todayStart);
+                if (hasStale) {
+                    // 1. Delete all one-time tasks
+                    await supabase.from('todos')
+                        .delete()
+                        .eq('user_id', user.id)
+                        .eq('recurrence_type', 'none');
+
+                    // 2. Reset recurring tasks (daily/weekly)
+                    await supabase.from('todos')
+                        .update({ is_completed: false, pomodoros_completed: 0, time_spent: 0 })
+                        .eq('user_id', user.id)
+                        .neq('recurrence_type', 'none');
+                        
+                    // 3. Update inserted_at so we don't trigger reset again today
+                    await supabase.from('todos')
+                        .update({ inserted_at: new Date().toISOString() })
+                        .eq('user_id', user.id);
                 }
             }
             // --- END DAILY AUTO-RESET ---
 
-            // --- HABIT AUTOGENERATION LOGIC ---
-            if (!generatingHabitsRef.current) {
-                generatingHabitsRef.current = true;
-                try {
-                    const today = new Date();
-                    const todayDateStr = today.toISOString().split('T')[0];
-                    const currentDayOfWeek = today.getDay();
-
-                    // Get habits
-                    const { data: habitsData } = await supabase
-                        .from('habits')
-                        .select('*')
-                        .eq('user_id', user.id);
-
-                    if (habitsData && habitsData.length > 0) {
-                        const habitsToGenerate = habitsData.filter(h => {
-                            // Check if generated today
-                            if (h.last_generated_date === todayDateStr) return false;
-                            // Check if it should repeat today
-                            if (h.repeat_type === 'daily') return true;
-                            if (h.repeat_type === 'weekly' && h.repeat_day_of_week === currentDayOfWeek) return true;
-                            return false;
-                        });
-
-                        if (habitsToGenerate.length > 0) {
-                            const todosToInsert = habitsToGenerate.map(h => {
-                                let newScheduledAt = null;
-                                if (h.scheduled_time) {
-                                    newScheduledAt = `${todayDateStr}T${h.scheduled_time}Z`;
-                                }
-                                return {
-                                    user_id: user.id,
-                                    task: h.title,
-                                    estimated_seconds: h.estimated_seconds,
-                                    location: h.location,
-                                    purpose: h.purpose,
-                                    scheduled_at: newScheduledAt,
-                                    habit_id: h.id,
-                                    block_id: h.block_id || null,
-                                };
-                            });
-
-                            await supabase.from('todos').insert(todosToInsert);
-
-                            // Update habits last_generated_date
-                            await supabase.from('habits')
-                                .update({ last_generated_date: todayDateStr })
-                                .in('id', habitsToGenerate.map(h => h.id));
-                        }
-                    }
-                } finally {
-                    generatingHabitsRef.current = false;
-                }
-            }
-            // --- END HABIT AUTOGENERATION ---
-
             const { data, error } = await supabase
                 .from('todos')
-                .select('*, blocks(id, name, color)')
+                .select('*, folders(id, name)')
                 .eq('user_id', user.id)
                 .order('inserted_at', { ascending: true });
 
             if (error) throw error;
 
             if (data) {
+                const today = new Date().getDay(); // 0-6 Sun-Sat
+                
                 const mappedTasks: Task[] = data.map(t => ({
                     id: t.id,
                     title: t.task,
                     completed: t.is_completed,
                     timeSpent: t.time_spent || 0,
-                    estimatedSeconds: t.estimated_seconds ?? 0,
-                    location: t.location || undefined,
-                    purpose: t.purpose || undefined,
-                    scheduledAt: t.scheduled_at || undefined,
-                    habitId: t.habit_id || undefined,
-                    blockId: t.block_id || undefined,
-                    blockName: (t as any).blocks?.name || undefined,
-                    blockColor: (t as any).blocks?.color || undefined,
-                }));
+                    pomodoroProfile: (t.estimated_seconds === 5400 ? '90-10' : t.estimated_seconds === 3000 ? '50-10' : '25-5') as PomodoroProfile,
+                    pomodorosRequired: t.pomodoros_required || 1,
+                    pomodorosCompleted: t.pomodoros_completed || 0,
+                    folderId: t.folder_id || undefined,
+                    recurrenceType: (t.recurrence_type || 'none') as RecurrenceType,
+                    recurrenceDays: t.recurrence_days || []
+                })).filter(t => {
+                    // Filter based on recurrence
+                    if (t.recurrenceType === 'none') return true;
+                    if (t.recurrenceType === 'daily') return true;
+                    if (t.recurrenceType === 'weekly') {
+                        return t.recurrenceDays?.includes(today);
+                    }
+                    return true;
+                });
                 setTasks(mappedTasks);
             }
         } catch (error) {
@@ -158,12 +146,11 @@ const Dashboard: React.FC = () => {
                 .eq('user_id', user.id);
             if (error) throw error;
             if (data) {
-                const g: GoalData = { year: '', month: '', week: '', day: '' };
+                const g: GoalData = { year: '', month: '', week: '' };
                 data.forEach(row => {
                     if (row.goal_type === 'year') { g.year = row.content || ''; g.yearImage = row.image_url || undefined; }
                     if (row.goal_type === 'month') { g.month = row.content || ''; g.monthImage = row.image_url || undefined; }
                     if (row.goal_type === 'week') { g.week = row.content || ''; g.weekImage = row.image_url || undefined; }
-                    if (row.goal_type === 'day') { g.day = row.content || ''; g.dayImage = row.image_url || undefined; }
                 });
                 setGoals(g);
             }
@@ -172,12 +159,165 @@ const Dashboard: React.FC = () => {
         }
     };
 
-
-    const handleSaveGoal = async (type: 'year' | 'month' | 'week' | 'day', content: string) => {
+    const fetchFolders = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            const imageKey = `${type}Image` as 'yearImage' | 'monthImage' | 'weekImage' | 'dayImage';
+
+            const today = new Date().toLocaleDateString('en-CA');
+
+            // Fetch folders
+            const { data: foldersData, error: foldersError } = await supabase
+                .from('folders')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: true });
+
+            if (foldersError) throw foldersError;
+
+            // Fetch today's completions
+            const { data: completionsData, error: completionsError } = await supabase
+                .from('folder_completions')
+                .select('folder_id')
+                .eq('user_id', user.id)
+                .eq('completed_date', today);
+
+            if (completionsError) throw completionsError;
+
+            const completedFolderIds = new Set(completionsData.map(c => c.folder_id));
+
+            if (foldersData) {
+                setFolders(foldersData.map((f: any) => {
+                    const uncompletedTasksInFolder = tasks.filter(t => t.folderId === f.id && !t.completed).length;
+                    return {
+                        id: f.id,
+                        name: f.name,
+                        description: f.description,
+                        isHabit: f.is_habit,
+                        startTime: f.start_time,
+                        endTime: f.end_time,
+                        timeBlocks: f.time_blocks || [],
+                        isCompletedToday: completedFolderIds.has(f.id),
+                        progress: uncompletedTasksInFolder
+                    };
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching folders:', error);
+        }
+    };
+
+    const handleAddFolder = async (name: string, startTime?: string, endTime?: string, timeBlocks: TimeBlock[] = []) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            
+            // For backward compatibility and immediate display, we can use the first block as start/end time
+            const firstBlock = timeBlocks[0] || (startTime ? { startTime, endTime: endTime || '' } : null);
+            
+            const { data, error } = await supabase.from('folders')
+                .insert([{ 
+                    user_id: user.id, 
+                    name,
+                    start_time: firstBlock?.startTime || null,
+                    end_time: firstBlock?.endTime || null,
+                    time_blocks: timeBlocks
+                }])
+                .select()
+                .single();
+            if (error) throw error;
+            if (data) fetchFolders();
+        } catch (error) {
+            console.error('Error adding folder:', error);
+        }
+    };
+
+    const handleUpdateFolder = async (id: string, data: { name: string; startTime?: string; endTime?: string; timeBlocks?: TimeBlock[] }) => {
+        try {
+            const firstBlock = data.timeBlocks?.[0];
+            
+            const { error } = await supabase.from('folders')
+                .update({ 
+                    name: data.name,
+                    start_time: firstBlock?.startTime || data.startTime || null,
+                    end_time: firstBlock?.endTime || data.endTime || null,
+                    time_blocks: data.timeBlocks || []
+                })
+                .eq('id', id);
+            if (error) throw error;
+            fetchFolders();
+        } catch (error) {
+            console.error('Error updating folder:', error);
+            alert('Failed to update folder.');
+        }
+    };
+
+    const handleDeleteFolder = async (id: string) => {
+        if (!confirm('Are you sure? This will delete all tasks in this folder.')) return;
+        try {
+            const { error } = await supabase.from('folders').delete().eq('id', id);
+            if (error) throw error;
+            if (activeFolderId === id) setActiveFolderId(null);
+            fetchFolders();
+            fetchTasks(); // cleanup tasks
+        } catch (error) {
+            console.error('Error deleting folder:', error);
+        }
+    };
+
+
+    const handleUpdateFolderDescription = async (id: string, description: string) => {
+        try {
+            const { error } = await supabase
+                .from('folders')
+                .update({ description })
+                .eq('id', id);
+            if (error) throw error;
+            setFolders(prev => prev.map(f => f.id === id ? { ...f, description } : f));
+        } catch (error) {
+            console.error('Error updating folder description:', error);
+        }
+    };
+
+    const handleToggleFolderCompletion = async (id: string) => {
+        try {
+            const { data: { user } = {} } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const today = new Date().toLocaleDateString('en-CA');
+            const folder = folders.find(f => f.id === id);
+            if (!folder) return;
+
+            if (folder.isCompletedToday) {
+                // Remove completion
+                const { error } = await supabase
+                    .from('folder_completions')
+                    .delete()
+                    .eq('folder_id', id)
+                    .eq('completed_date', today);
+                if (error) throw error;
+            } else {
+                // Add completion
+                const { error } = await supabase
+                    .from('folder_completions')
+                    .insert({ folder_id: id, user_id: user.id, completed_date: today });
+                if (error) throw error;
+            }
+
+            setFolders(prev => prev.map(f => 
+                f.id === id ? { ...f, isCompletedToday: !f.isCompletedToday } : f
+            ));
+        } catch (error) {
+            console.error('Error toggling folder completion:', error);
+        }
+    };
+
+
+    const handleSaveGoal = async (type: 'year' | 'month' | 'week', content: string) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const imageKey = `${type}Image` as 'yearImage' | 'monthImage' | 'weekImage';
             const { error } = await supabase
                 .from('goals')
                 .upsert({
@@ -194,7 +334,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleSaveGoalImage = async (type: 'year' | 'month' | 'week' | 'day', imageUrl: string | null) => {
+    const handleSaveGoalImage = async (type: 'year' | 'month' | 'week', imageUrl: string | null) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
@@ -215,47 +355,38 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const createTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number }) => {
+    const createTask = async (data: { 
+        title: string; 
+        pomodoroProfile: PomodoroProfile; 
+        pomodorosRequired: number;
+        recurrenceType: RecurrenceType;
+        recurrenceDays?: number[];
+    }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            let habitId = null;
-
-            if (data.repeatType && data.repeatType !== 'none') {
-                const { data: habitRow, error: habitError } = await supabase
-                    .from('habits')
-                    .insert({
-                        user_id: user.id,
-                        title: data.title,
-                        estimated_seconds: data.estimatedSeconds,
-                        location: data.location || null,
-                        purpose: data.purpose || null,
-                        scheduled_time: data.scheduledAt ? new Date(data.scheduledAt).toISOString().split('T')[1] : null,
-                        repeat_type: data.repeatType,
-                        repeat_day_of_week: data.repeatDayOfWeek,
-                        last_generated_date: new Date().toISOString().split('T')[0],
-                    })
-                    .select()
-                    .single();
-
-                if (habitError) {
-                    console.error('Error creating habit:', habitError);
-                } else {
-                    habitId = habitRow.id;
-                }
-            }
+            const secondsMap: Record<PomodoroProfile, number> = {
+                '25-5': 1500,
+                '50-10': 3000,
+                '90-10': 5400
+            };
+            const mappedSeconds = secondsMap[data.pomodoroProfile] || 1500;
 
             const { data: row, error } = await supabase
                 .from('todos')
                 .insert({
                     user_id: user.id,
                     task: data.title,
-                    estimated_seconds: data.estimatedSeconds,
-                    location: data.location || null,
-                    purpose: data.purpose || null,
-                    scheduled_at: data.scheduledAt || null,
-                    habit_id: habitId,
+                    estimated_seconds: mappedSeconds,
+                    pomodoros_required: data.pomodorosRequired,
+                    pomodoros_completed: 0,
+                    location: null,
+                    purpose: null,
+                    scheduled_at: null,
+                    folder_id: activeFolderId,
+                    recurrence_type: data.recurrenceType,
+                    recurrence_days: data.recurrenceDays
                 })
                 .select()
                 .single();
@@ -266,11 +397,12 @@ const Dashboard: React.FC = () => {
                 title: row.task,
                 completed: row.is_completed,
                 timeSpent: 0,
-                estimatedSeconds: row.estimated_seconds || 3600,
-                location: row.location || undefined,
-                purpose: row.purpose || undefined,
-                scheduledAt: row.scheduled_at || undefined,
-                habitId: row.habit_id || undefined,
+                pomodoroProfile: data.pomodoroProfile,
+                pomodorosRequired: data.pomodorosRequired,
+                pomodorosCompleted: 0,
+                folderId: row.folder_id || undefined,
+                recurrenceType: row.recurrence_type as RecurrenceType,
+                recurrenceDays: row.recurrence_days || []
             } as Task : null;
         } catch (error) {
             console.error('Error creating task:', error);
@@ -279,10 +411,11 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const updateTaskStatus = async (id: string, is_completed: boolean, time_spent?: number) => {
+    const updateTaskStatus = async (id: string, is_completed: boolean, time_spent?: number, pomodoros_completed?: number) => {
         try {
             const updates: any = { is_completed };
             if (time_spent !== undefined) updates.time_spent = time_spent;
+            if (pomodoros_completed !== undefined) updates.pomodoros_completed = pomodoros_completed;
             const { error } = await supabase.from('todos').update(updates).eq('id', id);
             if (error) throw error;
         } catch (error) {
@@ -347,7 +480,12 @@ const Dashboard: React.FC = () => {
         const task = tasks.find(t => t.id === id);
         if (!task || task.completed) return;
         setActiveTaskId(id);
-        setSeconds(task.estimatedSeconds);
+        const secondsMap: Record<PomodoroProfile, number> = {
+            '25-5': 1500,
+            '50-10': 3000,
+            '90-10': 5400
+        };
+        setSeconds(secondsMap[task.pomodoroProfile] || 1500);
         setTimerStatus('running');
         setCurrentView('timer');
     };
@@ -362,55 +500,92 @@ const Dashboard: React.FC = () => {
         const task = tasks.find(t => t.id === activeTaskId);
         if (!task) return;
 
-        const elapsed = task.estimatedSeconds - seconds;
+        const secondsMap: Record<PomodoroProfile, number> = {
+            '25-5': 1500,
+            '50-10': 3000,
+            '90-10': 5400
+        };
+        const taskTotalSeconds = secondsMap[task.pomodoroProfile] || 1500;
+        const elapsed = taskTotalSeconds - seconds;
         const newTotalTime = (task.timeSpent || 0) + elapsed;
+        const newPomodorosCompleted = (task.pomodorosCompleted || 0) + 1;
+        const isFullyCompleted = newPomodorosCompleted >= (task.pomodorosRequired || 1);
 
         setTasks(prev => prev.map(t =>
-            t.id === activeTaskId ? { ...t, completed: true, timeSpent: newTotalTime } : t
+            t.id === activeTaskId ? { ...t, completed: isFullyCompleted, timeSpent: newTotalTime, pomodorosCompleted: newPomodorosCompleted } : t
         ));
 
-        await updateTaskStatus(activeTaskId, true, newTotalTime);
+        await updateTaskStatus(activeTaskId, isFullyCompleted, newTotalTime, newPomodorosCompleted);
         await logFocusSession(elapsed);
 
         setTimerStatus('idle');
         setSeconds(0);
         setActiveTaskId(null);
 
-        // TEMPORARY FOR TESTING: Trigger break flow even on manual complete
-        if (task.estimatedSeconds > 0) {
+        if (taskTotalSeconds > 0) {
             setCompletedTaskName(task.title);
-            setBreakPhase('victory');
+            setBreakPhase(isFullyCompleted ? 'victory' : 'select');
             setBreakActivity(null);
-            setBreakSeconds(300);
+            setAutoContinueTaskId(isFullyCompleted ? null : task.id);
+
+            // Break map from pomodoro profile
+            const breakMap: Record<PomodoroProfile, number> = {
+                '25-5': 300,  // 5 mins
+                '50-10': 600, // 10 mins
+                '90-10': 600, // 10 mins
+            };
+            setBreakSeconds(breakMap[task.pomodoroProfile] || 300);
             setCurrentView('guided-break');
         } else {
             setCurrentView('dashboard');
         }
     };
 
-    const handleAddTask = async (data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; repeatType?: 'none' | 'daily' | 'weekly'; repeatDayOfWeek?: number }) => {
+    const handleAddTask = async (data: { 
+        title: string; 
+        pomodoroProfile: PomodoroProfile; 
+        pomodorosRequired: number;
+        recurrenceType: RecurrenceType;
+        recurrenceDays?: number[];
+    }) => {
         const newTask = await createTask(data);
         if (!newTask) return;
         setTasks(prev => [...prev, newTask]);
     };
 
-    const handleEditTask = async (id: string, data: { title: string; estimatedSeconds: number; location?: string; purpose?: string; scheduledAt?: string; blockId?: string }) => {
+    const handleEditTask = async (id: string, data: { 
+        title: string; 
+        pomodoroProfile: PomodoroProfile; 
+        pomodorosRequired: number;
+        recurrenceType: RecurrenceType;
+        recurrenceDays?: number[];
+    }) => {
         try {
+            const secondsMap: Record<PomodoroProfile, number> = {
+                '25-5': 1500,
+                '50-10': 3000,
+                '90-10': 5400
+            };
+            const mappedSeconds = secondsMap[data.pomodoroProfile] || 1500;
+
             const { error } = await supabase.from('todos').update({
                 task: data.title,
-                estimated_seconds: data.estimatedSeconds,
-                location: data.location || null,
-                purpose: data.purpose || null,
-                scheduled_at: data.scheduledAt || null,
+                estimated_seconds: mappedSeconds,
+                pomodoros_required: data.pomodorosRequired,
+                recurrence_type: data.recurrenceType,
+                recurrence_days: data.recurrenceDays,
+                location: null,
+                purpose: null,
+                scheduled_at: null,
             }).eq('id', id);
             if (error) throw error;
             setTasks(prev => prev.map(t => t.id === id ? {
                 ...t,
                 title: data.title,
-                estimatedSeconds: data.estimatedSeconds,
-                location: data.location,
-                purpose: data.purpose,
-                scheduledAt: data.scheduledAt,
+                pomodoroProfile: data.pomodoroProfile,
+                pomodorosRequired: data.pomodorosRequired,
+                recurrenceType: data.recurrenceType,
+                recurrenceDays: data.recurrenceDays || []
             } : t));
         } catch (error) {
             console.error('Error editing task:', error);
@@ -425,15 +600,45 @@ const Dashboard: React.FC = () => {
             setTimerStatus('idle');
             setSeconds(0);
             setActiveTaskId(null);
-            if (currentView === 'timer') setCurrentView('dashboard');
+            if (currentView === 'timer') {
+                setCurrentView('dashboard');
+            }
         }
     };
 
     const handleToggleComplete = async (id: string) => {
         const task = tasks.find(t => t.id === id);
         if (!task) return;
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-        await updateTaskStatus(id, !task.completed);
+
+        const isMarkingComplete = !task.completed;
+        
+        if (isMarkingComplete) {
+            const secondsMap: Record<PomodoroProfile, number> = {
+                '25-5': 1500,
+                '50-10': 3000,
+                '90-10': 5400
+            };
+            const taskTotalSeconds = secondsMap[task.pomodoroProfile] || 1500;
+            const requiredSeconds = taskTotalSeconds * (task.pomodorosRequired || 1);
+            const missingSeconds = requiredSeconds - (task.timeSpent || 0);
+
+            if (missingSeconds > 0) {
+                // If they forgot the timer, we credit them the full remaining time
+                setTasks(prev => prev.map(t =>
+                    t.id === id ? { ...t, completed: true, timeSpent: requiredSeconds, pomodorosCompleted: t.pomodorosRequired } : t
+                ));
+                await updateTaskStatus(id, true, requiredSeconds, task.pomodorosRequired);
+                await logFocusSession(missingSeconds);
+            } else {
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t));
+                await updateTaskStatus(id, true);
+            }
+        } else {
+            // Unchecking — just toggle status
+            setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: false } : t));
+            await updateTaskStatus(id, false);
+        }
+
         if (activeTaskId === id) {
             setTimerStatus('idle');
             setSeconds(0);
@@ -446,7 +651,14 @@ const Dashboard: React.FC = () => {
         const task = tasks.find(t => t.id === activeTaskId);
         if (!task) return;
         setTimerStatus('idle');
-        setSeconds(task.estimatedSeconds);
+
+        const secondsMap: Record<PomodoroProfile, number> = {
+            '25-5': 1500,
+            '50-10': 3000,
+            '90-10': 5400
+        };
+        setSeconds(secondsMap[task.pomodoroProfile] || 1500);
+
     };
 
     const handleBackToDashboard = () => {
@@ -473,18 +685,35 @@ const Dashboard: React.FC = () => {
                 if (activeTaskId) {
                     const task = tasks.find(t => t.id === activeTaskId);
                     if (task) {
-                        const newTotalTime = (task.timeSpent || 0) + task.estimatedSeconds;
+                        const secondsMap: Record<PomodoroProfile, number> = {
+                            '25-5': 1500,
+                            '50-10': 3000,
+                            '90-10': 5400
+                        };
+                        const taskTotalSeconds = secondsMap[task.pomodoroProfile] || 1500;
+                        const newTotalTime = (task.timeSpent || 0) + taskTotalSeconds;
+                        const newPomodorosCompleted = (task.pomodorosCompleted || 0) + 1;
+                        const isFullyCompleted = newPomodorosCompleted >= (task.pomodorosRequired || 1);
+
                         setTasks(prev => prev.map(t =>
-                            t.id === activeTaskId ? { ...t, completed: true, timeSpent: newTotalTime } : t
+                            t.id === activeTaskId ? { ...t, completed: isFullyCompleted, timeSpent: newTotalTime, pomodorosCompleted: newPomodorosCompleted } : t
                         ));
-                        updateTaskStatus(activeTaskId, true, newTotalTime);
-                        logFocusSession(task.estimatedSeconds);
+                        updateTaskStatus(activeTaskId, isFullyCompleted, newTotalTime, newPomodorosCompleted);
+                        logFocusSession(taskTotalSeconds);
 
                         // Enter guided break flow
                         setCompletedTaskName(task.title);
-                        setBreakPhase('victory');
+                        setBreakPhase(isFullyCompleted ? 'victory' : 'select');
                         setBreakActivity(null);
-                        setBreakSeconds(300);
+                        setAutoContinueTaskId(isFullyCompleted ? null : task.id);
+
+                        // Break map from pomodoro profile
+                        const breakMap: Record<PomodoroProfile, number> = {
+                            '25-5': 300,  // 5 mins
+                            '50-10': 600, // 10 mins
+                            '90-10': 600, // 10 mins
+                        };
+                        setBreakSeconds(breakMap[task.pomodoroProfile] || 300);
                         setCurrentView('guided-break');
                     }
                     setActiveTaskId(null);
@@ -539,8 +768,12 @@ const Dashboard: React.FC = () => {
                 const remaining = Math.round((breakEndTimeRef.current - Date.now()) / 1000);
                 if (remaining <= 0) {
                     setBreakSeconds(0);
-                    const hasTasks = tasks.some(t => !t.completed && t.estimatedSeconds > 0);
-                    setBreakPhase(hasTasks ? 'decision' : 'all-done');
+                    if (autoContinueTaskId) {
+                        handleBreakContinue(autoContinueTaskId);
+                    } else {
+                        const hasTasks = tasks.some(t => !t.completed && t.pomodoroProfile);
+                        setBreakPhase(hasTasks ? 'decision' : 'all-done');
+                    }
                 } else {
                     setBreakSeconds(remaining);
                 }
@@ -555,7 +788,7 @@ const Dashboard: React.FC = () => {
             return undefined;
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentView, breakPhase]);
+    }, [currentView, breakPhase, autoContinueTaskId]);
 
     // ── Midnight auto-reset timer ──────────────────────────
     useEffect(() => {
@@ -597,8 +830,12 @@ const Dashboard: React.FC = () => {
     };
 
     const handleSkipBreak = () => {
-        const hasTasks = tasks.some(t => !t.completed && t.estimatedSeconds > 0);
-        setBreakPhase(hasTasks ? 'decision' : 'all-done');
+        if (autoContinueTaskId) {
+            handleBreakContinue(autoContinueTaskId);
+        } else {
+            const hasTasks = tasks.some(t => !t.completed && t.pomodoroProfile);
+            setBreakPhase(hasTasks ? 'decision' : 'all-done');
+        }
     };
 
     const handleBreakDone = () => {
@@ -611,51 +848,7 @@ const Dashboard: React.FC = () => {
     };
 
     return (
-        <div className="relative h-screen w-full bg-[#0d0814] text-white overflow-hidden select-none">
-
-            {/* Top Floating Icons */}
-            {(currentView === 'dashboard' || currentView === 'analysis') && (
-                <>
-                    {/* Left — Flowlock Branding */}
-                    <div className="absolute top-6 left-4 sm:top-8 sm:left-6 lg:top-10 lg:left-12 z-50 flex items-center gap-3 pointer-events-auto">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7f19e6, #a855f7)' }}>
-                            <svg width="22" height="22" fill="white" viewBox="0 0 48 48"><path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" /></svg>
-                        </div>
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-xl font-bold tracking-tight text-white shadow-sm">Flowlock</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest text-[#a855f7] uppercase shadow-sm" style={{ background: 'rgba(127,25,230,0.15)', border: '1px solid rgba(127,25,230,0.3)' }}>Beta</span>
-                        </div>
-                    </div>
-
-                    {/* Right — Toggle + Profile */}
-                    <div className="absolute top-6 right-4 sm:top-8 sm:right-6 lg:top-10 lg:right-12 z-50 flex items-center gap-2 pointer-events-auto">
-                        <button
-                            onClick={() => setCurrentView(currentView === 'analysis' ? 'dashboard' : 'analysis')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer"
-                            style={{
-                                background: currentView === 'analysis' ? 'rgba(82, 114, 198, 0.3)' : 'rgba(255,255,255,0.08)',
-                                border: currentView === 'analysis' ? '1px solid rgba(82, 114, 198, 0.5)' : '1px solid rgba(255,255,255,0.1)',
-                                color: currentView === 'analysis' ? '#9aaddd' : 'rgba(255,255,255,0.7)',
-                            }}
-                            aria-label={currentView === 'analysis' ? 'Back to tasks' : 'View analysis'}
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                {currentView === 'analysis' ? (
-                                    <>
-                                        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-                                    </>
-                                ) : (
-                                    <>
-                                        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-                                    </>
-                                )}
-                            </svg>
-                            {currentView === 'analysis' ? 'Tasks' : 'Analysis'}
-                        </button>
-                        <UserProfileMenu />
-                    </div>
-                </>
-            )}
+        <div className="relative h-screen w-full bg-[#0D0E0D] text-white overflow-hidden select-none">
 
             {/* View Rendering */}
             {currentView === 'guided-break' ? (
@@ -664,7 +857,8 @@ const Dashboard: React.FC = () => {
                     taskName={completedTaskName}
                     breakActivity={breakActivity}
                     breakSeconds={breakSeconds}
-                    remainingTasks={tasks.filter(t => !t.completed && t.estimatedSeconds > 0)}
+                    remainingTasks={tasks.filter(t => !t.completed && t.pomodoroProfile)}
+                    autoContinueTaskId={autoContinueTaskId}
                     onDrinkWater={handleDrinkWater}
                     onSelectActivity={handleSelectBreakActivity}
                     onSkipBreak={handleSkipBreak}
@@ -692,23 +886,100 @@ const Dashboard: React.FC = () => {
             ) : currentView === 'analysis' ? (
                 <AnalysisPage
                     tasks={tasks}
+                    folders={folders}
+                    currentView={currentView}
+                    onToggleView={() => setCurrentView('dashboard')}
                     onBack={() => setCurrentView('dashboard')}
                 />
             ) : (
-                <TaskDashboard
-                    tasks={tasks}
-                    activeTaskId={activeTaskId}
-                    onPlayTask={handlePlayTask}
-                    onAddTask={handleAddTask}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    onToggleComplete={handleToggleComplete}
-                    loading={loading}
-                    goals={goals}
-                    onSaveGoal={handleSaveGoal}
-                    onSaveGoalImage={handleSaveGoalImage}
-                    onStartBreak={handleStartUnscheduledBreak}
-                />
+                <ResizableLayout
+                    sidebarContent={
+                        <GoalsPanel 
+                            goals={goals} 
+                            onSaveGoal={handleSaveGoal} 
+                            onSaveGoalImage={handleSaveGoalImage} 
+                        />
+                    }
+                    mobileFAB={
+                        <button
+                            onClick={() => setShowMobileGoals(true)}
+                            className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-transform cursor-pointer bg-[#22C55E]"
+                            aria-label="View Goals"
+                        >
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D0E0D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="6" />
+                                <circle cx="12" cy="12" r="2" />
+                            </svg>
+                        </button>
+                    }
+                    mobileOverlay={
+                        showMobileGoals && (
+                            <div className="fixed inset-0 z-50 flex flex-col">
+                                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMobileGoals(false)} />
+                                <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-3xl" style={{ background: '#0D0E0D', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}>
+                                    <div className="flex justify-center pt-3 pb-1">
+                                        <div className="w-10 h-1 rounded-full bg-white/15" />
+                                    </div>
+                                    <button onClick={() => setShowMobileGoals(false)} className="absolute top-4 right-4 p-2 text-white/40 hover:text-white transition-colors cursor-pointer">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </button>
+                                    <GoalsPanel goals={goals} onSaveGoal={handleSaveGoal} onSaveGoalImage={handleSaveGoalImage} />
+                                </div>
+                            </div>
+                        )
+                    }
+                >
+                    {activeFolderId ? (
+                        <FolderView
+                            folderId={activeFolderId}
+                            folderName={folders.find(f => f.id === activeFolderId)?.name || 'Folder'}
+                            description={folders.find(f => f.id === activeFolderId)?.description || ''}
+                            startTime={folders.find(f => f.id === activeFolderId)?.startTime}
+                            endTime={folders.find(f => f.id === activeFolderId)?.endTime}
+                            timeBlocks={folders.find(f => f.id === activeFolderId)?.timeBlocks}
+                            onUpdateDescription={handleUpdateFolderDescription}
+                            onUpdateFolder={handleUpdateFolder}
+                            pendingTasks={tasks.filter(t => !t.completed && t.folderId === activeFolderId)}
+                            completedTasks={tasks.filter(t => t.completed && t.folderId === activeFolderId)}
+                            activeTaskId={activeTaskId}
+                            editingTaskId={editingTaskId}
+                            saving={saving}
+                            onAddTask={handleAddTask}
+                            onEditTask={handleEditTask}
+                            onDeleteTask={handleDeleteTask}
+                            onToggleComplete={handleToggleComplete}
+                            onPlayTask={handlePlayTask}
+                            setEditingTaskId={setEditingTaskId}
+                            setSaving={setSaving}
+                            loading={loading}
+                            onStartBreak={handleStartUnscheduledBreak}
+                            onBack={() => {
+                                setActiveFolderId(null);
+                                setEditingTaskId(null);
+                            }}
+                        />
+                    ) : (
+                        <TaskDashboard
+                            folders={folders.map(f => ({ 
+                                ...f, 
+                                progress: tasks.filter(t => t.folderId === f.id && !t.completed).length 
+                            }))}
+                            onAddFolder={handleAddFolder}
+                            onUpdateFolder={handleUpdateFolder}
+                            onSelectFolder={setActiveFolderId}
+                            onDeleteFolder={handleDeleteFolder}
+                            onToggleFolderCompletion={handleToggleFolderCompletion}
+                            loading={loading}
+                            onStartBreak={handleStartUnscheduledBreak}
+                            currentView="dashboard"
+                            onToggleView={() => setCurrentView('analysis')}
+                        />
+                    )}
+                </ResizableLayout>
             )}
         </div>
     );
