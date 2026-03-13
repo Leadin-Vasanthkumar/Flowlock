@@ -3,11 +3,32 @@
 
 @theme {
   --color-primary-green: #22C55E;
+  --color-primary: #22C55E;
   --color-bg-dark: #0D0E0D;
   --color-card-dark: #1A1A1A;
   --color-text-muted: #909AA6;
+  --color-accent: #909AA6;
   --font-inter: 'Inter', sans-serif;
 }
+
+@layer utilities {
+  .glass-card {
+    @apply bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl;
+  }
+  
+  .glass-panel {
+    @apply bg-[#131413]/80 border border-white/5 backdrop-blur-2xl;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60;
+  }
+
+  .text-gradient-green {
+    @apply bg-clip-text text-transparent bg-gradient-to-b from-[#22C55E] to-[#16A34A];
+  }
+}
+
 
 body {
   font-family: 'Inter', sans-serif;
