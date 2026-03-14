@@ -166,14 +166,7 @@ const TimerView: React.FC<TimerViewProps> = ({
                     </div>
                 </div>
 
-                <div className="absolute bottom-12 flex flex-col items-center gap-6">
-                    <button 
-                        onClick={onMarkDone}
-                        className="text-[#909AA6]/30 hover:text-white transition-colors text-[11px] font-bold tracking-widest uppercase flex items-center gap-1 group cursor-pointer"
-                    >
-                        SKIP <span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </button>
-                </div>
+
             </main>
         </div>
     );

@@ -20,7 +20,7 @@ import {
 const FADE_UP_ANIMATION_VARIANTS = {
   hidden: { opacity: 0, y: 30 },
   show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100, damping: 20 } },
-};
+} as const;
 
 const STAGGER_CHILDREN_VARIANTS = {
   hidden: { opacity: 0 },
@@ -30,11 +30,11 @@ const STAGGER_CHILDREN_VARIANTS = {
       staggerChildren: 0.1,
     },
   },
-};
+} as const;
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-20">
+    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-14">
       <Navbar />
       
       <main>
@@ -55,7 +55,7 @@ const LandingPage: React.FC = () => {
 function Navbar() {
   const navigate = useNavigate();
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 backdrop-blur-md bg-[#0D0E0D]/40">
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 backdrop-blur-md bg-[#0D0E0D]/40 border-b border-white/[0.05]">
       <div className="flex items-center gap-3 cursor-pointer w-1/4 pointer-events-auto" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
         <div className="w-10 h-10 rounded-xl shrink-0 border border-white/10 overflow-hidden shadow-[0_0_12px_rgba(34,197,94,0.3)]">
           <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
@@ -93,7 +93,7 @@ function Navbar() {
 function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section className="relative pt-24 pb-12 md:pt-32 md:pb-16 px-6 flex flex-col items-center text-center">
+    <section className="relative pt-2 pb-8 md:pt-4 md:pb-12 px-6 flex flex-col items-center text-center">
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/20 rounded-full blur-[140px] opacity-40 pointer-events-none" />
       
@@ -103,17 +103,17 @@ function HeroSection() {
         animate="show"
         className="relative z-10 max-w-4xl mx-auto flex flex-col items-center"
       >
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-6">
+        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
           The Scientific Productivity Environment
         </motion.div>
         
-        <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter mb-6 leading-[0.95] text-white uppercase">
+        <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter mb-2 leading-[0.95] text-white uppercase">
           Focus Scientifically.<br />
           <span className="text-gradient-green">Perform Consistently.</span>
         </motion.h1>
         
-        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-2xl mb-10 leading-relaxed font-medium opacity-80">
+        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-2xl mb-5 leading-relaxed font-medium opacity-80">
           Flowlock manages your work blocks and neural resets. Stop burning out and start performing at your physiological peak.
         </motion.p>
         
