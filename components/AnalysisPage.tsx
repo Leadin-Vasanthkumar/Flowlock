@@ -240,7 +240,41 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
 
                         {/* 4. Habit Consistency Grid */}
                         <section className="bg-white/[0.02] border border-white/[0.05] rounded-[32px] p-8 md:p-10 backdrop-blur-xl">
-                            <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.2em] mb-8">Consistency Grid</h2>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                                <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.2em]">Consistency Grid</h2>
+                                
+                                    {(() => {
+                                        const currentYear = new Date().getFullYear();
+                                        const isMinMonth = selectedMonth.getFullYear() <= currentYear && selectedMonth.getMonth() === 0;
+                                        const isMaxMonth = selectedMonth.getFullYear() >= currentYear && selectedMonth.getMonth() === 11;
+                                        
+                                        return (
+                                            <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5">
+                                                <button 
+                                                    onClick={() => !isMinMonth && setSelectedMonth(prev => subMonths(prev, 1))}
+                                                    disabled={isMinMonth}
+                                                    className={`p-2 rounded-xl transition-all ${isMinMonth ? 'text-white/5 cursor-not-allowed' : 'hover:bg-white/5 text-white/40 hover:text-white cursor-pointer'}`}
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                                    </svg>
+                                                </button>
+                                                <span className="text-xs font-black text-white px-4 min-w-[120px] text-center tracking-widest uppercase">
+                                                    {format(selectedMonth, 'MMM yyyy')}
+                                                </span>
+                                                <button 
+                                                    onClick={() => !isMaxMonth && setSelectedMonth(prev => addMonths(prev, 1))}
+                                                    disabled={isMaxMonth}
+                                                    className={`p-2 rounded-xl transition-all ${isMaxMonth ? 'text-white/5 cursor-not-allowed' : 'hover:bg-white/5 text-white/40 hover:text-white cursor-pointer'}`}
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+                            </div>
                             
                             {loadingHistory ? (
                                 <div className="h-48 flex items-center justify-center">
@@ -249,18 +283,29 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                             ) : (
                                 <div className="flex flex-wrap gap-2">
                                     {(() => {
-                                        const now = new Date();
-                                        const year = now.getFullYear();
-                                        const month = now.getMonth();
+                                        const year = selectedMonth.getFullYear();
+                                        const month = selectedMonth.getMonth();
                                         const daysInMonth = new Date(year, month + 1, 0).getDate();
+                                        const habitFolders = folders.filter(f => f.isHabit);
+                                        const now = new Date();
                                         
                                         return Array.from({ length: daysInMonth }, (_, i) => {
                                             const day = i + 1;
                                             const d = new Date(year, month, day);
-                                            const dateStr = d.toLocaleDateString('en-CA');
-                                            const completionsOnDay = completionHistory.filter(c => c.completed_date === dateStr).length;
-                                            const intensity = Math.min(completionsOnDay / Math.max(folders.length, 1), 1);
-                                            const isToday = day === now.getDate();
+                                            const dateStr = format(d, 'yyyy-MM-dd');
+                                            
+                                            // Only count habit completions
+                                            const completionsOnDay = completionHistory.filter(c => 
+                                                c.completed_date === dateStr && 
+                                                habitFolders.some(h => h.id === c.folder_id)
+                                            ).length;
+                                            
+                                            const totalHabits = Math.max(habitFolders.length, 1);
+                                            // All habits must be done to show green
+                                            const allDone = completionsOnDay >= totalHabits && habitFolders.length > 0;
+                                            const intensity = allDone ? 1 : 0;
+                                            
+                                            const isToday = isSameDay(d, now);
                                             
                                             return (
                                                 <div 
@@ -268,13 +313,19 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                                     className={`w-8 h-8 rounded-lg transition-all duration-500 hover:scale-110 cursor-help relative group/cell ${isToday ? 'ring-2 ring-white/20 ring-offset-2 ring-offset-[#0D0E0D]' : ''}`}
                                                     style={{ 
                                                         background: intensity > 0 
-                                                            ? `rgba(34, 197, 94, ${0.1 + intensity * 0.9})` 
-                                                            : 'rgba(255,255,255,0.03)',
+                                                            ? `rgba(34, 197, 94, 1)` // Solid green when all habits done
+                                                            : completionsOnDay > 0
+                                                                ? `rgba(34, 197, 94, 0.15)` // Faint green if some done but not all
+                                                                : 'rgba(255,255,255,0.03)',
                                                         border: intensity > 0 ? 'none' : '1px solid rgba(255,255,255,0.05)'
                                                     }}
                                                 >
-                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 rounded bg-black/80 backdrop-blur-md text-[10px] font-bold text-white whitespace-nowrap opacity-0 group/cell:opacity-100 transition-opacity pointer-events-none z-20">
-                                                        {d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: {completionsOnDay}
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 rounded bg-black/80 backdrop-blur-md text-[10px] font-bold text-white whitespace-nowrap opacity-0 group/cell:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl border border-white/10">
+                                                        <div className="font-black mb-1">{format(d, 'MMM d, yyyy')}</div>
+                                                        <div className={allDone ? "text-[#22C55E]" : "text-white/40"}>
+                                                            {completionsOnDay} / {habitFolders.length} Habits
+                                                        </div>
+                                                        {allDone && <div className="text-[8px] text-[#22C55E] animate-pulse mt-0.5 tracking-widest font-black">ALL TARGETS MET</div>}
                                                     </div>
                                                 </div>
                                             );
@@ -292,27 +343,37 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                     <p className="text-[10px] text-white/20 font-bold tracking-widest uppercase">Multi-Habit Performance</p>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5">
-                                    <button 
-                                        onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
-                                        className="p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all cursor-pointer"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                    </button>
-                                    <span className="text-xs font-black text-white px-4 min-w-[120px] text-center tracking-widest uppercase">
-                                        {format(selectedMonth, 'MMMM yyyy')}
-                                    </span>
-                                    <button 
-                                        onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
-                                        className="p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all cursor-pointer"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                </div>
+                                {(() => {
+                                    const currentYear = new Date().getFullYear();
+                                    const isMinMonth = selectedMonth.getFullYear() <= currentYear && selectedMonth.getMonth() === 0;
+                                    const isMaxMonth = selectedMonth.getFullYear() >= currentYear && selectedMonth.getMonth() === 11;
+
+                                    return (
+                                        <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5">
+                                            <button 
+                                                onClick={() => !isMinMonth && setSelectedMonth(prev => subMonths(prev, 1))}
+                                                disabled={isMinMonth}
+                                                className={`p-2 rounded-xl transition-all ${isMinMonth ? 'text-white/5 cursor-not-allowed' : 'hover:bg-white/5 text-white/40 hover:text-white cursor-pointer'}`}
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                                </svg>
+                                            </button>
+                                            <span className="text-xs font-black text-white px-4 min-w-[120px] text-center tracking-widest uppercase">
+                                                {format(selectedMonth, 'MMMM yyyy')}
+                                            </span>
+                                            <button 
+                                                onClick={() => !isMaxMonth && setSelectedMonth(prev => addMonths(prev, 1))}
+                                                disabled={isMaxMonth}
+                                                className={`p-2 rounded-xl transition-all ${isMaxMonth ? 'text-white/5 cursor-not-allowed' : 'hover:bg-white/5 text-white/40 hover:text-white cursor-pointer'}`}
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             <div className="h-[300px] w-full mt-4 pr-4">
@@ -330,11 +391,14 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                             fullDate: format(day, 'MMM d')
                                         };
                                         
-                                        habitFolders.forEach(habit => {
+                                        habitFolders.forEach((habit, index) => {
                                             const isDone = completionHistory.some(c => 
                                                 c.folder_id === habit.id && c.completed_date === dateStr
                                             );
-                                            dayData[habit.name] = isDone ? 1 : 0;
+                                            // Vertical stacking: Each habit gets its own lane (offset by index * 2)
+                                            // Increased offset to 2 for a larger safety gap between curved lines
+                                            const offset = index * 2;
+                                            dayData[habit.name] = isDone ? (offset + 0.8) : offset;
                                         });
                                         
                                         return dayData;
@@ -352,11 +416,8 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                                     dy={10}
                                                 />
                                                 <YAxis 
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    ticks={[0, 1]}
-                                                    tickFormatter={(val) => val === 1 ? 'DONE' : ''}
-                                                    tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 8, fontWeight: 900 }}
+                                                    hide={true} 
+                                                    domain={[0, Math.max(habitFolders.length * 2, 2)]}
                                                 />
                                                 <Tooltip 
                                                     contentStyle={{ 
@@ -368,7 +429,12 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                                     }}
                                                     itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                                                     labelStyle={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}
-                                                    formatter={(value: number, name: string) => [value === 1 ? 'COMPLETED' : '—', name]}
+                                                    formatter={(value: number, name: string) => {
+                                                        const index = habitFolders.findIndex(h => h.name === name);
+                                                        const offset = index * 2;
+                                                        const isDone = value > offset + 0.4;
+                                                        return [isDone ? 'COMPLETED' : '—', name];
+                                                    }}
                                                     labelFormatter={(label, payload) => payload[0]?.payload.fullDate || label}
                                                 />
                                                 <Legend 
@@ -389,7 +455,7 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                                 {habitFolders.map((habit, index) => (
                                                     <Line
                                                         key={habit.id}
-                                                        type="monotone"
+                                                        type="monotone" // Switched back to smooth line graph
                                                         dataKey={habit.name}
                                                         stroke={habitColors[index % habitColors.length]}
                                                         strokeWidth={3}
