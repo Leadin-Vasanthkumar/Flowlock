@@ -14,7 +14,8 @@ import {
   PenTool,
   ArrowRight,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Layout
 } from 'lucide-react';
 
 const FADE_UP_ANIMATION_VARIANTS = {
@@ -34,13 +35,14 @@ const STAGGER_CHILDREN_VARIANTS = {
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-20">
+    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-14">
       <Navbar />
       
       <main>
         <HeroSection />
         <BenefitsSection />
         <FlowlockLoopSection />
+        <FeatureShowcaseSection />
         <ComparisonSection />
         <ProtocolsSection />
         <FAQSection />
@@ -93,10 +95,13 @@ function Navbar() {
 function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section className="relative pt-10 pb-8 md:pt-16 md:pb-12 px-6 flex flex-col items-center text-center">
-      {/* Background Glow */}
+    <section className="relative pt-6 pb-8 md:pt-10 md:pb-12 px-6 flex flex-col items-center text-center overflow-hidden">
+      {/* Background Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/20 rounded-full blur-[140px] opacity-40 pointer-events-none" />
       
+      {/* Subtle Bottom Glow to hint at content */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-40 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
+
       <motion.div 
         variants={STAGGER_CHILDREN_VARIANTS}
         initial="hidden"
@@ -110,15 +115,15 @@ function HeroSection() {
         
         <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter mb-6 leading-[0.95] text-white uppercase">
           Focus Scientifically.<br />
-          <span className="text-gradient-green">Perform Consistently.</span>
+          <span className="text-gradient-green lg:text-[0.85em]">Perform Consistently.</span>
         </motion.h1>
         
-        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-2xl mb-10 leading-relaxed font-medium opacity-80">
-          Flowlock manages your work blocks and neural resets. Stop burning out and start performing at your physiological peak.
+        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-3xl mb-10 leading-relaxed font-medium opacity-80">
+          Flowlock manages your work blocks and neural resets for peak physiological performance.
         </motion.p>
         
         <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="flex flex-col items-center">
-          <button onClick={() => navigate('/signup')} className="px-12 py-5 rounded-[2rem] bg-primary text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)] cursor-pointer">
+          <button onClick={() => navigate('/signup')} className="px-12 py-5 rounded-[2rem] bg-primary text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_0_20px_rgba(34,197,94,0.35)] cursor-pointer">
             Enter the Flow State <ArrowRight className="w-5 h-5 stroke-[3]" />
           </button>
         </motion.div>
@@ -132,12 +137,12 @@ function HeroSection() {
         className="relative mt-12 w-full max-w-5xl mx-auto px-4"
       >
         <div className="glass-panel rounded-2xl p-1.5 md:p-3 shadow-[0_0_100px_rgba(34,197,94,0.1)] relative z-10 overflow-hidden">
-          <div className="bg-[#0A0A0A] rounded-xl border border-white/10 overflow-hidden aspect-[16/9] relative flex flex-col justify-center items-center shadow-inner">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <Brain className="w-16 h-16 text-primary/20 mb-4" />
-                <p className="text-accent/50 font-medium tracking-widest text-sm uppercase">Focus Environment Preview</p>
-            </div>
+          <div className="bg-[#0A0A0A] rounded-xl border border-white/10 overflow-hidden relative shadow-inner">
+            <img 
+              src="/screencapture-flowlock-lime-vercel-app-app-2026-03-14-12_36_47.png" 
+              alt="Flowlock Dashboard Preview" 
+              className="w-full h-auto block"
+            />
           </div>
         </div>
       </motion.div>
@@ -194,6 +199,79 @@ function BenefitsSection() {
               </div>
               <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-4">{benefit.title}</h3>
               <p className="text-accent leading-relaxed font-medium opacity-60 group-hover:opacity-80 transition-opacity">{benefit.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureShowcaseSection() {
+  const features = [
+    {
+      title: "Physiological Intelligence",
+      description: "Get a real-time view into your cognitive battery. Flowlock tracks focus duration and suggests resets before the crash.",
+      className: "md:col-span-2 md:row-span-2",
+      placeholderLabel: "Core Dashboard Analytics"
+    },
+    {
+      title: "Sprint Precision",
+      description: "Choose your focus duration based on your current autonomic state.",
+      className: "md:col-span-1 md:row-span-1",
+      placeholderLabel: "Timer Selection UI"
+    },
+    {
+      title: "Guided Resets",
+      description: "Dynamic animations for NSRD and Breathing.",
+      className: "md:col-span-1 md:row-span-2",
+      placeholderLabel: "Neural Protocol View"
+    },
+    {
+      title: "Long-term Insight",
+      description: "See your week at a glance.",
+      className: "md:col-span-1 md:row-span-1",
+      placeholderLabel: "Flow History Chart"
+    }
+  ];
+
+  return (
+    <section className="py-24 px-6 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-16">
+          <h2 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">The Interface</h2>
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">Precision-Engineered Productivity</h2>
+          <p className="text-accent text-lg max-w-2xl font-medium opacity-70">A deep dive into the environment built for maximum cognitive output.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[250px] md:auto-rows-[300px]">
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className={`${feature.className} bg-white/[0.02] border border-white/[0.05] rounded-[2.5rem] p-8 flex flex-col group relative overflow-hidden hover:bg-white/[0.04] hover:border-primary/20 transition-all duration-700`}
+            >
+              {/* Feature Info */}
+              <div className="relative z-20 mb-auto">
+                <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
+                <p className="text-sm text-accent opacity-60 font-medium leading-relaxed max-w-[250px]">{feature.description}</p>
+              </div>
+
+              {/* High-Tech Placeholder */}
+              <div className="absolute inset-x-6 bottom-6 top-32 rounded-3xl bg-black/40 border border-white/5 flex items-center justify-center group-hover:border-primary/10 transition-all duration-700 overflow-hidden shadow-inner">
+                 {/* Internal Placeholder Grid Pattern */}
+                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
+                 
+                 <div className="flex flex-col items-center gap-3 relative z-10 opacity-30 group-hover:opacity-100 transition-opacity duration-700">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                       <Layout className="w-6 h-6 text-primary" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{feature.placeholderLabel}</span>
+                 </div>
+              </div>
             </motion.div>
           ))}
         </div>

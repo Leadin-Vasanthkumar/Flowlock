@@ -1,8 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Task, Folder } from '../types';
 import UserProfileMenu from './UserProfileMenu';
 import { supabase } from '../lib/supabase';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    LineChart, 
+    Line, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip, 
+    ResponsiveContainer,
+    Legend
+} from 'recharts';
+import { 
+    format, 
+    startOfMonth, 
+    endOfMonth, 
+    eachDayOfInterval, 
+    isSameDay, 
+    addMonths, 
+    subMonths,
+    parseISO
+} from 'date-fns';
 
 interface AnalysisPageProps {
     tasks: Task[];
@@ -20,6 +40,18 @@ interface CompletionRecord {
 const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView, onToggleView, onBack }) => {
     const [completionHistory, setCompletionHistory] = useState<CompletionRecord[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
+    const [selectedMonth, setSelectedMonth] = useState(new Date());
+
+    const habitColors = [
+        '#F472B6', // Pink
+        '#60A5FA', // Blue
+        '#34D399', // Emerald
+        '#FBBF24', // Amber
+        '#A78BFA', // Violet
+        '#FB7185', // Rose
+        '#2DD4BF', // Teal
+        '#FB923C', // Orange
+    ];
 
     useEffect(() => {
         fetchHistory();
@@ -250,6 +282,128 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                     })()}
                                 </div>
                             )}
+                        </section>
+
+                        {/* 5. Monthly Multi-Habit Performance Chart */}
+                        <section className="bg-white/[0.02] border border-white/[0.05] rounded-[32px] p-8 md:p-10 backdrop-blur-xl group">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                                <div>
+                                    <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.2em] mb-1">Consistency Flow</h2>
+                                    <p className="text-[10px] text-white/20 font-bold tracking-widest uppercase">Multi-Habit Performance</p>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5">
+                                    <button 
+                                        onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
+                                        className="p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all cursor-pointer"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+                                    <span className="text-xs font-black text-white px-4 min-w-[120px] text-center tracking-widest uppercase">
+                                        {format(selectedMonth, 'MMMM yyyy')}
+                                    </span>
+                                    <button 
+                                        onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
+                                        className="p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all cursor-pointer"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="h-[300px] w-full mt-4 pr-4">
+                                {(() => {
+                                    const monthStart = startOfMonth(selectedMonth);
+                                    const monthEnd = endOfMonth(selectedMonth);
+                                    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+                                    
+                                    const habitFolders = folders.filter(f => f.isHabit);
+                                    
+                                    const chartData = days.map(day => {
+                                        const dateStr = format(day, 'yyyy-MM-dd');
+                                        const dayData: any = { 
+                                            name: format(day, 'd'),
+                                            fullDate: format(day, 'MMM d')
+                                        };
+                                        
+                                        habitFolders.forEach(habit => {
+                                            const isDone = completionHistory.some(c => 
+                                                c.folder_id === habit.id && c.completed_date === dateStr
+                                            );
+                                            dayData[habit.name] = isDone ? 1 : 0;
+                                        });
+                                        
+                                        return dayData;
+                                    });
+
+                                    return (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                                                <XAxis 
+                                                    dataKey="name" 
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: 700 }}
+                                                    dy={10}
+                                                />
+                                                <YAxis 
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    ticks={[0, 1]}
+                                                    tickFormatter={(val) => val === 1 ? 'DONE' : ''}
+                                                    tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 8, fontWeight: 900 }}
+                                                />
+                                                <Tooltip 
+                                                    contentStyle={{ 
+                                                        backgroundColor: 'rgba(13, 14, 13, 0.9)', 
+                                                        border: '1px solid rgba(255,255,255,0.1)',
+                                                        borderRadius: '16px',
+                                                        backdropFilter: 'blur(10px)',
+                                                        padding: '12px'
+                                                    }}
+                                                    itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                                                    labelStyle={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}
+                                                    formatter={(value: number, name: string) => [value === 1 ? 'COMPLETED' : '—', name]}
+                                                    labelFormatter={(label, payload) => payload[0]?.payload.fullDate || label}
+                                                />
+                                                <Legend 
+                                                    verticalAlign="top" 
+                                                    align="right"
+                                                    iconType="circle"
+                                                    content={({ payload }) => (
+                                                        <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 mb-6">
+                                                            {payload?.map((entry: any, index: number) => (
+                                                                <div key={`item-${index}`} className="flex items-center gap-1.5">
+                                                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                                                    <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">{entry.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                />
+                                                {habitFolders.map((habit, index) => (
+                                                    <Line
+                                                        key={habit.id}
+                                                        type="monotone"
+                                                        dataKey={habit.name}
+                                                        stroke={habitColors[index % habitColors.length]}
+                                                        strokeWidth={3}
+                                                        dot={false}
+                                                        activeDot={{ r: 4, strokeWidth: 0, fill: habitColors[index % habitColors.length] }}
+                                                        animationDuration={1500}
+                                                        connectNulls
+                                                    />
+                                                ))}
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    );
+                                })()}
+                            </div>
                         </section>
                     </div>
 
