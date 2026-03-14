@@ -17,6 +17,7 @@ import {
   XCircle,
   Layout
 } from 'lucide-react';
+import { ContainerScroll } from './ui/container-scroll-animation';
 
 const FADE_UP_ANIMATION_VARIANTS = {
   hidden: { opacity: 0, y: 30 },
@@ -35,25 +36,26 @@ const STAGGER_CHILDREN_VARIANTS = {
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-14">
+    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-24 md:pt-32">
       <Navbar />
       
       <main>
         <HeroSection />
-        <BenefitsSection />
-        <FlowlockLoopSection />
-        <FeatureShowcaseSection />
-        <ComparisonSection />
-        <ProtocolsSection />
-        <FAQSection />
-        <CTASection />
+        <div className="-mt-32 md:-mt-40">
+          <BenefitsSection />
+          <FlowlockLoopSection />
+          <FeatureShowcaseSection />
+          <ComparisonSection />
+          <ProtocolsSection />
+          <FAQSection />
+          <CTASection />
+        </div>
       </main>
 
       <Footer />
     </div>
   );
 };
-
 function Navbar() {
   const navigate = useNavigate();
   return (
@@ -95,77 +97,61 @@ function Navbar() {
 function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section className="relative pt-8 pb-8 md:pt-20 md:pb-12 px-6 flex flex-col items-center text-center overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/20 rounded-full blur-[140px] opacity-40 pointer-events-none" />
-      
-      {/* Subtle Bottom Glow to hint at content */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-40 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
-
-      <motion.div 
-        variants={STAGGER_CHILDREN_VARIANTS}
-        initial="hidden"
-        animate="show"
-        className="relative z-10 max-w-4xl mx-auto flex flex-col items-center"
-      >
-        <motion.h1 
-          variants={FADE_UP_ANIMATION_VARIANTS} 
-          className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-8 leading-[0.9] text-white uppercase text-center"
-        >
-          Don't just track time.<br />
-          <span className="text-primary drop-shadow-[0_0_30px_rgba(34,197,94,0.3)]">Manage your brain.</span>
-        </motion.h1>
-        
-        <motion.p 
-          variants={FADE_UP_ANIMATION_VARIANTS} 
-          className="text-lg md:text-xl text-accent max-w-xl mb-12 leading-relaxed font-medium opacity-80 text-center"
-        >
-          The elite environment for deep work and rapid recovery.
-        </motion.p>
-        
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="flex flex-col items-center">
-          <button 
-            onClick={() => navigate('/signup')} 
-            className="px-10 py-5 rounded-full bg-primary text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_20px_40px_-5px_rgba(34,197,94,0.4)] ring-4 ring-primary/10 cursor-pointer relative overflow-hidden group"
-          >
-            <span className="relative z-10">Enter the Flow State</span>
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-          </button>
-        </motion.div>
-      </motion.div>
-
-      {/* Product Preview Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 100 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 1.2, ease: "easeOut" }}
-        className="relative mt-20 w-full max-w-6xl mx-auto px-6 group"
-      >
-        {/* Massive Background Glow */}
-        <div className="absolute -inset-20 bg-primary/10 blur-[120px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-1000" />
-        
-        <div className="relative z-10 [perspective:2000px]">
+    <section className="relative flex flex-col items-center justify-center overflow-hidden bg-[#0D0E0D]">
+      <ContainerScroll
+        titleComponent={
           <motion.div 
-            whileHover={{ rotateX: 2, scale: 1.02 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="p-[1px] rounded-2xl bg-gradient-to-b from-primary/60 via-white/20 to-transparent shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5),0_0_80px_rgba(34,197,94,0.1)] relative"
+            variants={STAGGER_CHILDREN_VARIANTS}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="flex flex-col items-center"
           >
-            <div className="bg-[#0A0A0A]/90 backdrop-blur-3xl rounded-2xl overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
-              <div className="bg-[#0A0A0A] rounded-xl overflow-hidden relative">
-                <img 
-                  src="/screencapture-flowlock-lime-vercel-app-app-2026-03-14-12_36_47.png" 
-                  alt="Flowlock Dashboard Preview" 
-                  className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700" 
-                />
-              </div>
-            </div>
+            <motion.h1 
+              variants={FADE_UP_ANIMATION_VARIANTS} 
+              className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-12 leading-[0.9] text-white uppercase text-center"
+            >
+              Don't just track time.<br />
+              <span className="text-primary drop-shadow-[0_0_30px_rgba(34,197,94,0.3)]">Manage your brain.</span>
+            </motion.h1>
             
+            <motion.p 
+              variants={FADE_UP_ANIMATION_VARIANTS} 
+              className="text-lg md:text-xl text-accent max-w-xl mb-12 leading-relaxed font-medium opacity-80 text-center"
+            >
+              The elite environment for deep work and rapid recovery.
+            </motion.p>
+            
+            <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="flex flex-col items-center mb-28">
+              <button 
+                onClick={() => navigate('/signup')} 
+                className="px-10 py-5 rounded-full bg-primary text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_20px_40px_-5px_rgba(34,197,94,0.4)] ring-4 ring-primary/10 cursor-pointer relative overflow-hidden group"
+              >
+                <span className="relative z-10">Enter the Flow State</span>
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              </button>
+            </motion.div>
+          </motion.div>
+        }
+      >
+        <div className="relative w-full group">
+          {/* Massive Background Glow */}
+          <div className="absolute -inset-20 bg-primary/10 blur-[120px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-1000" />
+          
+          <div className="p-[1.5px] rounded-2xl bg-gradient-to-b from-primary/60 via-white/10 to-transparent shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5),0_0_80px_rgba(34,197,94,0.1)] w-full">
+            <div className="bg-[#0A0A0A]/90 backdrop-blur-3xl rounded-2xl w-full overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
+              <img 
+                src="/screencapture-flowlock-lime-vercel-app-app-2026-03-14-12_36_47.png" 
+                alt="Flowlock Dashboard Preview" 
+                className="w-full h-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-700 block" 
+              />
+            </div>
             {/* Top Shine Accent */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-30" />
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </ContainerScroll>
     </section>
   );
 }
@@ -369,8 +355,8 @@ function ComparisonSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
           {/* The Others */}
-          <div className="bg-white/[0.01] border border-white/5 rounded-[2.5rem] p-10 md:p-12 transition-all duration-500 opacity-55 grayscale-[0.5] group">
-            <h3 className="text-xs font-black text-accent/50 uppercase tracking-[0.3em] mb-8">Basic Timers</h3>
+          <div className="bg-white/[0.01] border border-white/5 rounded-[2.5rem] p-10 md:p-12 transition-all duration-500 group">
+            <h3 className="text-xs font-black text-accent uppercase tracking-[0.3em] mb-8">Basic Timers</h3>
             <ul className="space-y-6">
               {[
                 "Just a clock ticking down",
@@ -379,8 +365,8 @@ function ComparisonSection() {
                 "Random, unstructured breaks",
                 "Scroll social media during breaks"
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-4 text-accent/60">
-                  <XCircle className="w-6 h-6 text-accent/30 shrink-0 mt-0.5" />
+                <li key={i} className="flex items-start gap-4 text-accent">
+                  <XCircle className="w-6 h-6 text-accent/70 shrink-0 mt-0.5" />
                   <span className="text-lg font-medium">{item}</span>
                 </li>
               ))}
