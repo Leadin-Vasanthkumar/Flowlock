@@ -73,10 +73,16 @@ function Navbar() {
       </nav>
 
       <div className="flex items-center justify-end gap-6 w-1/4">
-        <button onClick={() => navigate('/login')} className="hidden md:block text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer">
+        <button 
+          onClick={() => navigate('/login')} 
+          className="hidden md:block text-xs font-black uppercase tracking-widest text-[#22C55E]/70 hover:text-[#22C55E] transition-colors cursor-pointer"
+        >
           Log in
         </button>
-        <button onClick={() => navigate('/signup')} className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg">
+        <button 
+          onClick={() => navigate('/signup')} 
+          className="group flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/5 text-[#22C55E] text-xs font-black uppercase tracking-widest hover:bg-[#22C55E]/10 hover:border-[#22C55E]/60 transition-all duration-300 cursor-pointer shadow-[0_0_15px_-5px_rgba(34,197,94,0.2)]"
+        >
           Get Started
         </button>
       </div>
@@ -97,23 +103,23 @@ function HeroSection() {
         animate="show"
         className="relative z-10 max-w-4xl mx-auto flex flex-col items-center"
       >
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold uppercase tracking-wider text-accent mb-6">
+        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
           The Scientific Productivity Environment
         </motion.div>
         
-        <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="font-serif text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight mb-6 leading-[1.05]">
+        <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter mb-6 leading-[0.95] text-white uppercase">
           Focus Scientifically.<br />
           <span className="text-gradient-green">Perform Consistently.</span>
         </motion.h1>
         
-        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-2xl mb-8 leading-relaxed opacity-80">
+        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-2xl mb-10 leading-relaxed font-medium opacity-80">
           Flowlock manages your work blocks and neural resets. Stop burning out and start performing at your physiological peak.
         </motion.p>
         
         <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="flex flex-col items-center">
-          <button onClick={() => navigate('/signup')} className="px-10 py-4 rounded-full bg-primary text-black font-bold text-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_0_40px_rgba(34,197,94,0.3)] cursor-pointer">
-            Enter the Flow State <ArrowRight className="w-5 h-5" />
+          <button onClick={() => navigate('/signup')} className="px-12 py-5 rounded-[2rem] bg-primary text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)] cursor-pointer">
+            Enter the Flow State <ArrowRight className="w-5 h-5 stroke-[3]" />
           </button>
         </motion.div>
       </motion.div>
@@ -167,8 +173,9 @@ function BenefitsSection() {
     <section id="benefits" className="py-24 px-6 relative">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-4xl md:text-5xl font-medium mb-4">The Scientific Reset</h2>
-          <p className="text-accent text-lg max-w-2xl mx-auto">Four ways Flowlock engineers your environment for sustained peak performance.</p>
+          <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.3em] mb-4">Features</h2>
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Scientific Reset</h2>
+          <p className="text-accent text-lg max-w-2xl mx-auto font-medium opacity-70">Four ways Flowlock engineers your environment for sustained peak performance.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -179,13 +186,14 @@ function BenefitsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="glass-card rounded-2xl p-8 hover:bg-white/10 transition-colors group"
+              className="bg-white/[0.02] border border-white/[0.05] rounded-[2rem] p-10 hover:bg-white/[0.04] transition-all duration-500 backdrop-blur-xl group relative overflow-hidden"
             >
-              <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[60px] -mr-16 -mt-16 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:border-primary/30 transition-all duration-500">
                 {benefit.icon}
               </div>
-              <h3 className="text-xl font-medium mb-3">{benefit.title}</h3>
-              <p className="text-accent leading-relaxed">{benefit.description}</p>
+              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-4">{benefit.title}</h3>
+              <p className="text-accent leading-relaxed font-medium opacity-60 group-hover:opacity-80 transition-opacity">{benefit.description}</p>
             </motion.div>
           ))}
         </div>
@@ -214,16 +222,17 @@ function FlowlockLoopSection() {
   ];
 
   return (
-    <section className="py-24 px-6 bg-white/5 border-y border-white/5">
+    <section className="py-24 px-6 bg-white/[0.01] border-y border-white/[0.04]">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
-          <h2 className="font-serif text-4xl md:text-5xl font-medium mb-4">The Flowlock Loop</h2>
-          <p className="text-accent text-lg">A systematic approach to sustained cognitive output.</p>
+          <h2 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">Strategy</h2>
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Flowlock Loop</h2>
+          <p className="text-accent text-lg font-medium opacity-70">A systematic approach to sustained cognitive output.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative">
           {/* Connecting Line */}
-          <div className="hidden lg:block absolute top-12 left-[15%] right-[15%] h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="hidden lg:block absolute top-12 left-[15%] right-[15%] h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-20" />
 
           {steps.map((step, index) => (
             <motion.div 
@@ -232,13 +241,13 @@ function FlowlockLoopSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.2 }}
-              className="relative flex flex-col items-center text-center"
+              className="relative flex flex-col items-center text-center group"
             >
-              <div className="w-24 h-24 rounded-full bg-[#0D0E0D] border border-primary/30 flex items-center justify-center mb-8 relative z-10 shadow-[0_0_30px_rgba(34,197,94,0.15)]">
-                <span className="font-serif text-3xl text-primary">{step.num}</span>
+              <div className="w-24 h-24 rounded-[2rem] bg-[#0D0E0D] border border-primary/20 flex items-center justify-center mb-8 relative z-10 shadow-[0_0_40px_rgba(34,197,94,0.1)] group-hover:border-primary/50 group-hover:shadow-[0_0_60px_rgba(34,197,94,0.2)] transition-all duration-500">
+                <span className="text-3xl font-black text-primary transition-all duration-500 group-hover:scale-110">{step.num}</span>
               </div>
-              <h3 className="text-2xl font-medium mb-4">{step.title}</h3>
-              <p className="text-accent leading-relaxed">{step.description}</p>
+              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-4">{step.title}</h3>
+              <p className="text-accent leading-relaxed font-medium opacity-60 group-hover:opacity-100 transition-opacity">{step.description}</p>
             </motion.div>
           ))}
         </div>
@@ -254,13 +263,13 @@ function ComparisonSection() {
       
       <div className="max-w-5xl mx-auto relative z-10">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-4xl md:text-6xl font-medium mb-6">Don't just track time.<br />Manage your brain.</h2>
+          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6 text-white text-center">Don't just track time.<br />Manage your brain.</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* The Others */}
-          <div className="glass-card rounded-3xl p-8 md:p-12 border-red-500/20 bg-red-500/5">
-            <h3 className="text-2xl font-medium mb-8 text-white/80">Basic Timers</h3>
+          <div className="bg-white/[0.02] border border-red-500/10 rounded-[2.5rem] p-10 md:p-12 hover:bg-red-500/5 transition-all duration-500 group">
+            <h3 className="text-xs font-black text-red-400 uppercase tracking-[0.3em] mb-8">Basic Timers</h3>
             <ul className="space-y-6">
               {[
                 "Just a clock ticking down",
@@ -269,18 +278,18 @@ function ComparisonSection() {
                 "Random, unstructured breaks",
                 "Scroll social media during breaks"
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-accent">
-                  <XCircle className="w-6 h-6 text-red-400 shrink-0" />
-                  <span className="text-lg">{item}</span>
+                <li key={i} className="flex items-start gap-4 text-accent/60 group-hover:text-accent transition-colors">
+                  <XCircle className="w-6 h-6 text-red-400/50 shrink-0 mt-0.5" />
+                  <span className="text-lg font-medium">{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
           {/* Flowlock */}
-          <div className="glass-card rounded-3xl p-8 md:p-12 border-primary/30 bg-primary/5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[80px] rounded-full" />
-            <h3 className="text-2xl font-medium mb-8 text-primary">Flowlock</h3>
+          <div className="bg-white/[0.02] border border-primary/20 rounded-[2.5rem] p-10 md:p-12 hover:bg-primary/5 transition-all duration-500 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-8">Flowlock</h3>
             <ul className="space-y-6 relative z-10">
               {[
                 "Physiological state management",
@@ -289,9 +298,9 @@ function ComparisonSection() {
                 "Peak performance protocols",
                 "Active recovery techniques"
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-white">
-                  <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
-                  <span className="text-lg">{item}</span>
+                <li key={i} className="flex items-start gap-4 text-white/50 group-hover:text-white transition-colors">
+                  <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+                  <span className="text-lg font-black">{item}</span>
                 </li>
               ))}
             </ul>
@@ -330,8 +339,9 @@ function ProtocolsSection() {
     <section id="protocols" className="py-24 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-4xl md:text-5xl font-medium mb-4">Featured Protocols</h2>
-          <p className="text-accent text-lg">Scientifically validated methods to reset your nervous system.</p>
+          <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.3em] mb-4">Science</h2>
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">Featured Protocols</h2>
+          <p className="text-accent text-lg font-medium opacity-70">Scientifically validated methods to reset your nervous system.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -342,13 +352,13 @@ function ProtocolsSection() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="glass-card rounded-2xl p-8 text-center flex flex-col items-center group hover:border-primary/50 transition-colors"
+              className="bg-white/[0.02] border border-white/[0.05] rounded-[2rem] p-8 text-center flex flex-col items-center group hover:bg-white/[0.04] hover:border-primary/30 transition-all duration-500"
             >
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-8 text-primary group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
                 {protocol.icon}
               </div>
-              <h3 className="text-xl font-medium mb-3">{protocol.title}</h3>
-              <p className="text-accent text-sm leading-relaxed">{protocol.desc}</p>
+              <h3 className="text-xl font-black uppercase tracking-tight text-white mb-4">{protocol.title}</h3>
+              <p className="text-accent text-sm leading-relaxed font-medium opacity-60 group-hover:opacity-100 transition-opacity">{protocol.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -374,9 +384,10 @@ function FAQSection() {
   ];
 
   return (
-    <section id="faq" className="py-32 px-6 bg-white/5">
+    <section id="faq" className="py-32 px-6 bg-white/[0.01] border-y border-white/[0.04]">
       <div className="max-w-3xl mx-auto">
-        <h2 className="font-serif text-4xl md:text-5xl font-medium mb-12 text-center">Frequently Asked Questions</h2>
+        <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.3em] mb-4 text-center">Inquiry</h2>
+        <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-12 text-center">Frequently Asked Questions</h2>
         
         <div className="space-y-4">
           {faqs.map((faq, index) => (
@@ -425,11 +436,12 @@ function CTASection() {
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/10" />
       
       <div className="max-w-4xl mx-auto text-center relative z-10">
-        <h2 className="font-serif text-5xl md:text-7xl font-medium mb-8">Ready to master your focus?</h2>
-        <p className="text-xl text-accent mb-10 max-w-2xl mx-auto">
+        <h2 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">Elite Access</h2>
+        <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white mb-8">Ready to master your focus?</h2>
+        <p className="text-xl text-accent mb-12 max-w-2xl mx-auto font-medium opacity-70">
           Join thousands of high performers who have upgraded their cognitive environment.
         </p>
-        <button onClick={() => navigate('/signup')} className="px-10 py-5 rounded-full bg-primary text-black font-semibold text-xl hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_60px_rgba(34,197,94,0.4)] cursor-pointer">
+        <button onClick={() => navigate('/signup')} className="px-12 py-6 rounded-[2rem] bg-primary text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_20px_60px_-10px_rgba(34,197,94,0.4)] cursor-pointer">
           Start Your Free Trial
         </button>
       </div>
