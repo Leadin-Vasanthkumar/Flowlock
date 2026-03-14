@@ -281,9 +281,9 @@ const AuthPage: React.FC = () => {
 
                 {/* Footer Links */}
                 <footer className="mt-8 flex gap-6 text-xs text-slate-500 font-medium">
-                    <button className="hover:text-slate-300 transition-colors">Privacy Policy</button>
-                    <button className="hover:text-slate-300 transition-colors">Terms of Service</button>
-                    <button className="hover:text-slate-300 transition-colors">Help Center</button>
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300 transition-colors">Privacy Policy</a>
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300 transition-colors">Terms of Service</a>
+                    <a href="mailto:contact@vasanthkumar.work" className="hover:text-slate-300 transition-colors">Support</a>
                 </footer>
             </main>
 

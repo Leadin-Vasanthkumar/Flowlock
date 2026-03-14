@@ -7,6 +7,9 @@ import SignUpPage from './components/SignUpPage';
 import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+
 
 const App: React.FC = () => {
   const [session, setSession] = useState(null);
@@ -58,7 +61,10 @@ const App: React.FC = () => {
           path="/app"
           element={session ? <Dashboard /> : <Navigate to="/login" replace />}
         />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
       </Routes>
+
     </BrowserRouter>
   );
 };

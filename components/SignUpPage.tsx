@@ -234,11 +234,10 @@ const SignUpPage: React.FC = () => {
                                         </div>
                                     </form>
 
-                                    <p className="mt-6 text-center text-xs text-slate-600 leading-relaxed">
+                                    <p className="mt-8 text-center text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest font-bold">
                                         By signing up, you agree to our{' '}
-                                        <button className="text-slate-400 hover:underline">Terms of Service</button>{' '}and{' '}
-                                        <button className="text-slate-400 hover:underline">Privacy Policy</button>.
-                                        Your data is encrypted and secure.
+                                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-primary transition-colors hover:underline">Terms</a>{' '}and{' '}
+                                        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-primary transition-colors hover:underline">Privacy Policy</a>.
                                     </p>
                                 </>
                             )}

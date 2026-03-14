@@ -36,7 +36,7 @@ const STAGGER_CHILDREN_VARIANTS = {
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-24 md:pt-32">
+    <div className="min-h-screen bg-[#0D0E0D] text-white selection:bg-primary/30 overflow-x-hidden pt-16 md:pt-24">
       <Navbar />
       
       <main>
@@ -97,7 +97,7 @@ function Navbar() {
 function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section className="relative flex flex-col items-center justify-center overflow-hidden bg-[#0D0E0D]">
+    <section className="relative flex flex-col items-center justify-center overflow-hidden bg-[#0D0E0D] pb-32 md:pb-60">
       <ContainerScroll
         titleComponent={
           <motion.div 
@@ -526,10 +526,10 @@ function CTASection() {
         <h2 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">Elite Access</h2>
         <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white mb-8">Ready to master your focus?</h2>
         <p className="text-xl text-accent mb-12 max-w-2xl mx-auto font-medium opacity-70">
-          Join thousands of high performers who have upgraded their cognitive environment.
+          Upgrade your cognitive environment. Build deep work habits that stick.
         </p>
         <button onClick={() => navigate('/signup')} className="px-12 py-6 rounded-[2rem] bg-primary text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_20px_60px_-10px_rgba(34,197,94,0.4)] cursor-pointer">
-          Start Your Free Trial
+          Start Now
         </button>
       </div>
     </section>
@@ -550,9 +550,9 @@ function Footer() {
           © {new Date().getFullYear()} Flowlock. All rights reserved.
         </div>
         <div className="flex gap-6 text-sm text-accent">
-          <a href="#" className="hover:text-white transition-colors">Privacy</a>
-          <a href="#" className="hover:text-white transition-colors">Terms</a>
-          <a href="#" className="hover:text-white transition-colors">Contact</a>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Privacy</a>
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Terms</a>
+          <a href="mailto:contact@vasanthkumar.work" className="hover:text-white transition-colors">Contact</a>
         </div>
       </div>
     </footer>
