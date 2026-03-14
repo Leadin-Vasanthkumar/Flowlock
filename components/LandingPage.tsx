@@ -55,23 +55,25 @@ const LandingPage: React.FC = () => {
 function Navbar() {
   const navigate = useNavigate();
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 backdrop-blur-md bg-[#0D0E0D]/60 border-b border-white/5">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 backdrop-blur-md bg-[#0D0E0D]/40">
+      <div className="flex items-center gap-2 cursor-pointer w-1/4" onClick={() => window.scrollTo(0,0)}>
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
           <Brain className="w-5 h-5 text-black" />
         </div>
         <span className="font-serif text-xl font-medium tracking-tight">Flowlock</span>
       </div>
-      <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-accent">
+      
+      <nav className="hidden md:flex items-center justify-center gap-10 text-sm font-medium text-accent flex-1">
         <a href="#benefits" className="hover:text-white transition-colors">Science</a>
         <a href="#protocols" className="hover:text-white transition-colors">Protocols</a>
         <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
       </nav>
-      <div className="flex items-center gap-4">
+
+      <div className="flex items-center justify-end gap-6 w-1/4">
         <button onClick={() => navigate('/login')} className="hidden md:block text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer">
           Log in
         </button>
-        <button onClick={() => navigate('/signup')} className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
+        <button onClick={() => navigate('/signup')} className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg">
           Get Started
         </button>
       </div>
@@ -82,9 +84,9 @@ function Navbar() {
 function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section className="relative pt-20 pb-20 md:pt-32 md:pb-32 px-6 flex flex-col items-center text-center">
+    <section className="relative pt-24 pb-12 md:pt-32 md:pb-16 px-6 flex flex-col items-center text-center">
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] opacity-50 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/20 rounded-full blur-[140px] opacity-40 pointer-events-none" />
       
       <motion.div 
         variants={STAGGER_CHILDREN_VARIANTS}
@@ -92,42 +94,40 @@ function HeroSection() {
         animate="show"
         className="relative z-10 max-w-4xl mx-auto flex flex-col items-center"
       >
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-accent mb-8">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold uppercase tracking-wider text-accent mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
           The Scientific Productivity Environment
         </motion.div>
         
-        <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="font-serif text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight mb-6 leading-[1.1]">
+        <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="font-serif text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight mb-6 leading-[1.05]">
           Focus Scientifically.<br />
           <span className="text-gradient-green">Perform Consistently.</span>
         </motion.h1>
         
-        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-2xl mb-10 leading-relaxed">
+        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-2xl mb-8 leading-relaxed opacity-80">
           Flowlock manages your work blocks and neural resets. Stop burning out and start performing at your physiological peak.
         </motion.p>
         
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="flex flex-col sm:flex-row items-center gap-4">
-          <button onClick={() => navigate('/signup')} className="px-8 py-4 rounded-full bg-primary text-black font-semibold text-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-[0_0_40px_rgba(34,197,94,0.4)] cursor-pointer">
+        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="flex flex-col items-center">
+          <button onClick={() => navigate('/signup')} className="px-10 py-4 rounded-full bg-primary text-black font-bold text-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_0_40px_rgba(34,197,94,0.3)] cursor-pointer">
             Enter the Flow State <ArrowRight className="w-5 h-5" />
-          </button>
-          <button onClick={() => document.getElementById('benefits')?.scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 rounded-full bg-white/5 text-white font-medium text-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
-            View the Science
           </button>
         </motion.div>
       </motion.div>
 
-      {/* Dashboard Preview / Placeholder */}
+      {/* Dashboard Preview / Placeholder - Moved Upwards */}
       <motion.div 
-        initial={{ opacity: 0, y: 100 }}
+        initial={{ opacity: 0, y: 80 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 1, type: "spring" }}
-        className="relative mt-20 w-full max-w-5xl mx-auto"
+        transition={{ delay: 0.4, duration: 1, type: "spring", bounce: 0.3 }}
+        className="relative mt-12 w-full max-w-5xl mx-auto px-4"
       >
-        <div className="glass-panel rounded-2xl p-2 md:p-4 shadow-2xl relative z-10">
-          <div className="bg-[#0A0A0A] rounded-xl border border-white/5 overflow-hidden aspect-[16/9] relative flex flex-col justify-center items-center">
-            {/* The user said "I will import my screenshots later, use placeholder images", we can just keep the mock UI or just put a div */}
-            <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center">
-                <p className="text-accent text-lg">App Screenshot Placeholder</p>
+        <div className="glass-panel rounded-2xl p-1.5 md:p-3 shadow-[0_0_100px_rgba(34,197,94,0.1)] relative z-10 overflow-hidden">
+          <div className="bg-[#0A0A0A] rounded-xl border border-white/10 overflow-hidden aspect-[16/9] relative flex flex-col justify-center items-center shadow-inner">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <Brain className="w-16 h-16 text-primary/20 mb-4" />
+                <p className="text-accent/50 font-medium tracking-widest text-sm uppercase">Focus Environment Preview</p>
             </div>
           </div>
         </div>
