@@ -56,11 +56,14 @@ function Navbar() {
   const navigate = useNavigate();
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 backdrop-blur-md bg-[#0D0E0D]/40">
-      <div className="flex items-center gap-2 cursor-pointer w-1/4" onClick={() => window.scrollTo(0,0)}>
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <Brain className="w-5 h-5 text-black" />
+      <div className="flex items-center gap-3 cursor-pointer w-1/4 pointer-events-auto" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+        <div className="w-10 h-10 rounded-xl shrink-0 border border-white/10 overflow-hidden shadow-[0_0_12px_rgba(34,197,94,0.3)]">
+          <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
         </div>
-        <span className="font-serif text-xl font-medium tracking-tight">Flowlock</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xl font-bold tracking-tight text-white shadow-sm">Flowlock</span>
+          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold tracking-wider uppercase">Beta</span>
+        </div>
       </div>
       
       <nav className="hidden md:flex items-center justify-center gap-10 text-sm font-medium text-accent flex-1">
@@ -438,9 +441,11 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 py-12 px-6 text-center md:text-left">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-primary" />
-          <span className="font-serif text-xl font-medium">Flowlock</span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 shadow-lg">
+            <img src="/logo.flowlock.png" alt="Flowlock Logo" className="w-full h-full object-cover" />
+          </div>
+          <span className="text-xl font-bold tracking-tight text-white">Flowlock</span>
         </div>
         <div className="text-accent text-sm">
           © {new Date().getFullYear()} Flowlock. All rights reserved.
