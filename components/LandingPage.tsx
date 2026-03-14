@@ -95,7 +95,7 @@ function Navbar() {
 function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section className="relative pt-6 pb-8 md:pt-10 md:pb-12 px-6 flex flex-col items-center text-center overflow-hidden">
+    <section className="relative pt-8 pb-8 md:pt-20 md:pb-12 px-6 flex flex-col items-center text-center overflow-hidden">
       {/* Background Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/20 rounded-full blur-[140px] opacity-40 pointer-events-none" />
       
@@ -108,42 +108,62 @@ function HeroSection() {
         animate="show"
         className="relative z-10 max-w-4xl mx-auto flex flex-col items-center"
       >
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-6">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          The Scientific Productivity Environment
-        </motion.div>
-        
-        <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter mb-6 leading-[0.95] text-white uppercase">
-          Focus Scientifically.<br />
-          <span className="text-gradient-green lg:text-[0.85em]">Perform Consistently.</span>
+        <motion.h1 
+          variants={FADE_UP_ANIMATION_VARIANTS} 
+          className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-8 leading-[0.9] text-white uppercase text-center"
+        >
+          Don't just track time.<br />
+          <span className="text-primary drop-shadow-[0_0_30px_rgba(34,197,94,0.3)]">Manage your brain.</span>
         </motion.h1>
         
-        <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg md:text-xl text-accent max-w-3xl mb-10 leading-relaxed font-medium opacity-80">
-          Flowlock manages your work blocks and neural resets for peak physiological performance.
+        <motion.p 
+          variants={FADE_UP_ANIMATION_VARIANTS} 
+          className="text-lg md:text-xl text-accent max-w-xl mb-12 leading-relaxed font-medium opacity-80 text-center"
+        >
+          The elite environment for deep work and rapid recovery.
         </motion.p>
         
         <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="flex flex-col items-center">
-          <button onClick={() => navigate('/signup')} className="px-12 py-5 rounded-[2rem] bg-primary text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_0_20px_rgba(34,197,94,0.35)] cursor-pointer">
-            Enter the Flow State <ArrowRight className="w-5 h-5 stroke-[3]" />
+          <button 
+            onClick={() => navigate('/signup')} 
+            className="px-10 py-5 rounded-full bg-primary text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_20px_40px_-5px_rgba(34,197,94,0.4)] ring-4 ring-primary/10 cursor-pointer relative overflow-hidden group"
+          >
+            <span className="relative z-10">Enter the Flow State</span>
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
           </button>
         </motion.div>
       </motion.div>
 
-      {/* Dashboard Preview / Placeholder - Moved Upwards */}
+      {/* Product Preview Section */}
       <motion.div 
-        initial={{ opacity: 0, y: 80 }}
+        initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 1, type: "spring", bounce: 0.3 }}
-        className="relative mt-12 w-full max-w-5xl mx-auto px-4"
+        transition={{ delay: 0.5, duration: 1.2, ease: "easeOut" }}
+        className="relative mt-20 w-full max-w-6xl mx-auto px-6 group"
       >
-        <div className="glass-panel rounded-2xl p-1.5 md:p-3 shadow-[0_0_100px_rgba(34,197,94,0.1)] relative z-10 overflow-hidden">
-          <div className="bg-[#0A0A0A] rounded-xl border border-white/10 overflow-hidden relative shadow-inner">
-            <img 
-              src="/screencapture-flowlock-lime-vercel-app-app-2026-03-14-12_36_47.png" 
-              alt="Flowlock Dashboard Preview" 
-              className="w-full h-auto block"
-            />
-          </div>
+        {/* Massive Background Glow */}
+        <div className="absolute -inset-20 bg-primary/10 blur-[120px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-1000" />
+        
+        <div className="relative z-10 [perspective:2000px]">
+          <motion.div 
+            whileHover={{ rotateX: 2, scale: 1.02 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="p-[1px] rounded-2xl bg-gradient-to-b from-primary/60 via-white/20 to-transparent shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5),0_0_80px_rgba(34,197,94,0.1)] relative"
+          >
+            <div className="bg-[#0A0A0A]/90 backdrop-blur-3xl rounded-2xl overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
+              <div className="bg-[#0A0A0A] rounded-xl overflow-hidden relative">
+                <img 
+                  src="/screencapture-flowlock-lime-vercel-app-app-2026-03-14-12_36_47.png" 
+                  alt="Flowlock Dashboard Preview" 
+                  className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700" 
+                />
+              </div>
+            </div>
+            
+            {/* Top Shine Accent */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-30" />
+          </motion.div>
         </div>
       </motion.div>
     </section>
@@ -154,36 +174,36 @@ function BenefitsSection() {
   const benefits = [
     {
       icon: <Timer className="w-6 h-6 text-primary" />,
-      title: "Dopamine Management",
-      description: "Custom Pomodoro sets (25/50/90 mins) engineered to match your cognitive load and protect dopamine pathways."
+      title: "Protect Your Focus",
+      description: "Custom focus sets (25/50/90 mins) designed to prevent mental burnout and keep your energy high."
     },
     {
-      icon: <Brain className="w-6 h-6 text-purple-400" />,
-      title: "Neural Reset Protocols",
-      description: "Scientifically backed breaks including NSDR (Non-Sleep Deep Rest) and Bilateral Stimulation to clear cognitive fatigue."
+      icon: <Brain className="w-6 h-6 text-primary" />,
+      title: "Rapid Brain Recovery",
+      description: "Science-backed breaks that actually clear mental fog and prepare your brain for the next session."
     },
     {
-      icon: <Activity className="w-6 h-6 text-blue-400" />,
-      title: "Physiological Reset",
-      description: "Integrated breathing, stretching, and walking resets designed to actively lower cortisol mid-work."
+      icon: <Activity className="w-6 h-6 text-primary" />,
+      title: "Guided Body Resets",
+      description: "Integrated breathing and stretching prompts to lower stress levels while you work."
     },
     {
-      icon: <BarChart3 className="w-6 h-6 text-orange-400" />,
-      title: "Deep Analytics",
-      description: "Real-time insights into your focus cycles, physiological state, and long-term productivity trends."
+      icon: <BarChart3 className="w-6 h-6 text-primary" />,
+      title: "Track Your Energy",
+      description: "Real-time insights into your focus cycles and long-term productivity trends."
     }
   ];
 
   return (
-    <section id="benefits" className="py-24 px-6 relative">
+    <section id="benefits" className="py-20 px-6 relative">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.3em] mb-4">Features</h2>
-          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Scientific Reset</h2>
-          <p className="text-accent text-lg max-w-2xl mx-auto font-medium opacity-70">Four ways Flowlock engineers your environment for sustained peak performance.</p>
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">The Science of Deep Work</h2>
+          <p className="text-accent text-lg max-w-2xl mx-auto font-medium opacity-70">Four ways Flowlock optimizes your environment for sustained peak performance.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {benefits.map((benefit, index) => (
             <motion.div 
               key={index}
@@ -191,14 +211,22 @@ function BenefitsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white/[0.02] border border-white/[0.05] rounded-[2rem] p-10 hover:bg-white/[0.04] transition-all duration-500 backdrop-blur-xl group relative overflow-hidden"
+              className="bg-white/[0.02] border border-white/[0.05] rounded-[2.5rem] p-12 hover:bg-white/[0.04] hover:border-primary/40 transition-all duration-700 backdrop-blur-xl group relative overflow-hidden cursor-pointer"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[60px] -mr-16 -mt-16 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:border-primary/30 transition-all duration-500">
+              {/* Premium Glow Effect */}
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 blur-[100px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+              <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-primary/5 blur-[80px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000 delay-100" />
+
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-10 group-hover:scale-110 group-hover:border-primary/50 group-hover:shadow-[0_0_20px_rgba(34,197,94,0.2)] transition-all duration-500 relative z-10">
                 {benefit.icon}
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-4">{benefit.title}</h3>
-              <p className="text-accent leading-relaxed font-medium opacity-60 group-hover:opacity-80 transition-opacity">{benefit.description}</p>
+              
+              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-4 relative z-10 group-hover:text-primary transition-colors duration-300">
+                {benefit.title}
+              </h3>
+              <p className="text-accent leading-relaxed font-medium opacity-60 group-hover:opacity-100 transition-opacity duration-500 relative z-10 max-w-[90%]">
+                {benefit.description}
+              </p>
             </motion.div>
           ))}
         </div>
@@ -208,69 +236,63 @@ function BenefitsSection() {
 }
 
 function FeatureShowcaseSection() {
-  const features = [
+  const showcases = [
     {
-      title: "Physiological Intelligence",
-      description: "Get a real-time view into your cognitive battery. Flowlock tracks focus duration and suggests resets before the crash.",
-      className: "md:col-span-2 md:row-span-2",
-      placeholderLabel: "Core Dashboard Analytics"
+      title: "Your Focus Trends",
+      imgSrc: "/screencapture-flowlock-lime-vercel-app-app-2026-03-14-13_20_17.png",
+      description: "A complete view of your focus history and energy levels."
     },
     {
-      title: "Sprint Precision",
-      description: "Choose your focus duration based on your current autonomic state.",
-      className: "md:col-span-1 md:row-span-1",
-      placeholderLabel: "Timer Selection UI"
+      title: "Deep Focus Modes",
+      imgSrc: "/Screenshot 2026-03-14 130534.png",
+      description: "Choose your focus duration based on your current task intensity."
     },
     {
-      title: "Guided Resets",
-      description: "Dynamic animations for NSRD and Breathing.",
-      className: "md:col-span-1 md:row-span-2",
-      placeholderLabel: "Neural Protocol View"
+      title: "Science-Backed Resets",
+      imgSrc: "/Screenshot 2026-03-14 132525.png",
+      description: "Easy-to-follow protocols to clear mental fog rapidly."
     },
     {
-      title: "Long-term Insight",
-      description: "See your week at a glance.",
-      className: "md:col-span-1 md:row-span-1",
-      placeholderLabel: "Flow History Chart"
+      title: "Post-Work Recovery",
+      imgSrc: "/Screenshot 2026-03-14 132438.png",
+      description: "Follow-up hydration and recovery steps after every win."
     }
   ];
 
   return (
-    <section className="py-24 px-6 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-16">
-          <h2 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">The Interface</h2>
-          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-4">Precision-Engineered Productivity</h2>
-          <p className="text-accent text-lg max-w-2xl font-medium opacity-70">A deep dive into the environment built for maximum cognitive output.</p>
+    <section className="py-24 px-6 relative overflow-hidden bg-[#0D0E0D]">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-24">
+          <h2 className="text-xs font-black text-primary uppercase tracking-[0.4em] mb-4">The Interface</h2>
+          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white mb-6">Built for Performance</h2>
+          <p className="text-accent text-xl max-w-2xl mx-auto font-medium opacity-70">A single-view deep dive into the Flowlock environment.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[250px] md:auto-rows-[300px]">
-          {features.map((feature, index) => (
+        <div className="flex flex-col gap-20">
+          {showcases.map((item, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className={`${feature.className} bg-white/[0.02] border border-white/[0.05] rounded-[2.5rem] p-8 flex flex-col group relative overflow-hidden hover:bg-white/[0.04] hover:border-primary/20 transition-all duration-700`}
+              transition={{ duration: 0.8 }}
+              className="group flex flex-col items-center"
             >
-              {/* Feature Info */}
-              <div className="relative z-20 mb-auto">
-                <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
-                <p className="text-sm text-accent opacity-60 font-medium leading-relaxed max-w-[250px]">{feature.description}</p>
+              <div className="mb-8 text-center px-4">
+                <h3 className="text-3xl font-black uppercase tracking-tight text-white mb-3 group-hover:text-primary transition-colors">{item.title}</h3>
+                <p className="text-accent opacity-60 font-medium max-w-xl mx-auto">{item.description}</p>
               </div>
 
-              {/* High-Tech Placeholder */}
-              <div className="absolute inset-x-6 bottom-6 top-32 rounded-3xl bg-black/40 border border-white/5 flex items-center justify-center group-hover:border-primary/10 transition-all duration-700 overflow-hidden shadow-inner">
-                 {/* Internal Placeholder Grid Pattern */}
-                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
-                 
-                 <div className="flex flex-col items-center gap-3 relative z-10 opacity-30 group-hover:opacity-100 transition-opacity duration-700">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                       <Layout className="w-6 h-6 text-primary" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{feature.placeholderLabel}</span>
-                 </div>
+              {/* Premium Gradient Border Wrapper */}
+              <div className="w-full max-w-4xl p-[1px] rounded-[2rem] bg-gradient-to-b from-primary/40 via-white/10 to-transparent group-hover:from-primary/60 transition-all duration-700 shadow-[0_30px_80px_rgba(0,0,0,0.8)]">
+                <div className="w-full h-full rounded-[1.95rem] overflow-hidden bg-white/[0.06] hover:shadow-[0_0_80px_rgba(34,197,94,0.15)] transition-all duration-700 relative">
+                  <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+                  <img 
+                    src={item.imgSrc} 
+                    alt={item.title} 
+                    className="w-full h-auto block relative z-10"
+                  />
+                </div>
               </div>
             </motion.div>
           ))}
@@ -309,8 +331,9 @@ function FlowlockLoopSection() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative">
-          {/* Connecting Line */}
-          <div className="hidden lg:block absolute top-12 left-[15%] right-[15%] h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-20" />
+          {/* Connecting Line with Glow */}
+          <div className="hidden lg:block absolute top-12 left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50 shadow-[0_0_20px_rgba(34,197,94,0.6)]" />
+          <div className="hidden lg:block absolute top-12 left-[15%] right-[15%] h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-40 z-10" />
 
           {steps.map((step, index) => (
             <motion.div 
@@ -336,28 +359,28 @@ function FlowlockLoopSection() {
 
 function ComparisonSection() {
   return (
-    <section className="py-32 px-6 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-primary/10 rounded-[100%] blur-[100px] pointer-events-none" />
+    <section className="py-20 px-6 relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-primary/5 rounded-[100%] blur-[120px] pointer-events-none" />
       
       <div className="max-w-5xl mx-auto relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6 text-white text-center">Don't just track time.<br />Manage your brain.</h2>
+          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6 text-white text-center">Flowlock vs.<br />Everything Else</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
           {/* The Others */}
-          <div className="bg-white/[0.02] border border-red-500/10 rounded-[2.5rem] p-10 md:p-12 hover:bg-red-500/5 transition-all duration-500 group">
-            <h3 className="text-xs font-black text-red-400 uppercase tracking-[0.3em] mb-8">Basic Timers</h3>
+          <div className="bg-white/[0.01] border border-white/5 rounded-[2.5rem] p-10 md:p-12 transition-all duration-500 opacity-55 grayscale-[0.5] group">
+            <h3 className="text-xs font-black text-accent/50 uppercase tracking-[0.3em] mb-8">Basic Timers</h3>
             <ul className="space-y-6">
               {[
                 "Just a clock ticking down",
                 "No guidance on how to rest",
-                "Leads to cognitive burnout",
+                "Leads to burnout",
                 "Random, unstructured breaks",
                 "Scroll social media during breaks"
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-4 text-accent/60 group-hover:text-accent transition-colors">
-                  <XCircle className="w-6 h-6 text-red-400/50 shrink-0 mt-0.5" />
+                <li key={i} className="flex items-start gap-4 text-accent/60">
+                  <XCircle className="w-6 h-6 text-accent/30 shrink-0 mt-0.5" />
                   <span className="text-lg font-medium">{item}</span>
                 </li>
               ))}
@@ -365,19 +388,19 @@ function ComparisonSection() {
           </div>
 
           {/* Flowlock */}
-          <div className="bg-white/[0.02] border border-primary/20 rounded-[2.5rem] p-10 md:p-12 hover:bg-primary/5 transition-all duration-500 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          <div className="bg-gradient-to-b from-white/[0.04] to-transparent border-2 border-primary/30 rounded-[2.5rem] p-10 md:p-12 hover:bg-primary/[0.02] hover:border-primary/50 transition-all duration-700 relative overflow-hidden group shadow-[0_0_60px_rgba(34,197,94,0.15)]">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[80px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-700" />
             <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-8">Flowlock</h3>
             <ul className="space-y-6 relative z-10">
               {[
-                "Physiological state management",
+                "Mental state management",
                 "Guided 'Neural Resets'",
-                "Dopamine pathway protection",
+                "Focus pathway protection",
                 "Peak performance protocols",
                 "Active recovery techniques"
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-4 text-white/50 group-hover:text-white transition-colors">
-                  <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+                <li key={i} className="flex items-start gap-4 text-white hover:text-primary transition-colors duration-300">
+                  <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5 shadow-[0_0_10px_rgba(34,197,94,0.4)]" />
                   <span className="text-lg font-black">{item}</span>
                 </li>
               ))}
@@ -449,11 +472,11 @@ function FAQSection() {
   const faqs = [
     {
       q: "How is this better than a standard Pomodoro?",
-      a: "Standard Pomodoro timers just tell you when to stop working. Flowlock tells you HOW to rest. By focusing on guided physiological resets (like breathing or NSDR) rather than random resting, you actively recover cognitive capacity instead of just pausing."
+      a: "Standard Pomodoro timers just tell you when to stop working. Flowlock tells you HOW to rest. By focusing on guided mental resets rather than random resting, you actively recover your brain power instead of just pausing."
     },
     {
       q: "Is NSDR actually effective?",
-      a: "Yes. Non-Sleep Deep Rest (NSDR) protocols are backed by neuroscience research (including studies from Stanford) for rapid recovery, dopamine replenishment, and reducing stress in short 10-20 minute windows."
+      a: "Yes. Non-Sleep Deep Rest (NSDR) is a proven method for rapid recovery, helping you replenish focus and reduce stress in short 10-20 minute windows."
     },
     {
       q: "Who is Flowlock for?",
