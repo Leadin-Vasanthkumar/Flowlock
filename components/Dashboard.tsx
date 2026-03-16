@@ -771,8 +771,9 @@ const Dashboard: React.FC = () => {
                     if (autoContinueTaskId) {
                         handleBreakContinue(autoContinueTaskId);
                     } else {
-                        const hasTasks = tasks.some(t => !t.completed && t.pomodoroProfile);
-                        setBreakPhase(hasTasks ? 'decision' : 'all-done');
+                        // Scope check to active folder only
+                        const sameFolderTasks = tasks.filter(t => !t.completed && t.pomodoroProfile && t.folderId === activeFolderId);
+                        setBreakPhase(sameFolderTasks.length > 0 ? 'decision' : 'all-done');
                     }
                 } else {
                     setBreakSeconds(remaining);
@@ -788,7 +789,7 @@ const Dashboard: React.FC = () => {
             return undefined;
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentView, breakPhase, autoContinueTaskId]);
+    }, [currentView, breakPhase, autoContinueTaskId, tasks, activeFolderId]);
 
     // ── Midnight auto-reset timer ──────────────────────────
     useEffect(() => {
@@ -833,8 +834,8 @@ const Dashboard: React.FC = () => {
         if (autoContinueTaskId) {
             handleBreakContinue(autoContinueTaskId);
         } else {
-            const hasTasks = tasks.some(t => !t.completed && t.pomodoroProfile);
-            setBreakPhase(hasTasks ? 'decision' : 'all-done');
+            const sameFolderTasks = tasks.filter(t => !t.completed && t.pomodoroProfile && t.folderId === activeFolderId);
+            setBreakPhase(sameFolderTasks.length > 0 ? 'decision' : 'all-done');
         }
     };
 
@@ -857,7 +858,7 @@ const Dashboard: React.FC = () => {
                     taskName={completedTaskName}
                     breakActivity={breakActivity}
                     breakSeconds={breakSeconds}
-                    remainingTasks={tasks.filter(t => !t.completed && t.pomodoroProfile)}
+                    remainingTasks={tasks.filter(t => !t.completed && t.pomodoroProfile && t.folderId === activeFolderId)}
                     autoContinueTaskId={autoContinueTaskId}
                     onDrinkWater={handleDrinkWater}
                     onSelectActivity={handleSelectBreakActivity}
