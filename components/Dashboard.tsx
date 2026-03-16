@@ -12,6 +12,18 @@ import { supabase } from '../lib/supabase';
 
 type ViewType = 'dashboard' | 'timer' | 'guided-break' | 'analysis';
 
+const POMODORO_CONFIG: Record<PomodoroProfile, { focus: number; break: number }> = {
+    '25-5': { focus: 1500, break: 300 },
+    '50-10': { focus: 3000, break: 600 },
+    '90-10': { focus: 5400, break: 600 },
+};
+
+const getProfileFromSeconds = (seconds: number): PomodoroProfile => {
+    if (seconds === 5400) return '90-10';
+    if (seconds === 3000) return '50-10';
+    return '25-5';
+};
+
 const Dashboard: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [folders, setFolders] = useState<Folder[]>([]);
@@ -112,7 +124,7 @@ const Dashboard: React.FC = () => {
                     title: t.task,
                     completed: t.is_completed,
                     timeSpent: t.time_spent || 0,
-                    pomodoroProfile: (t.estimated_seconds === 5400 ? '90-10' : t.estimated_seconds === 3000 ? '50-10' : '25-5') as PomodoroProfile,
+                    pomodoroProfile: getProfileFromSeconds(t.estimated_seconds),
                     pomodorosRequired: t.pomodoros_required || 1,
                     pomodorosCompleted: t.pomodoros_completed || 0,
                     folderId: t.folder_id || undefined,
@@ -366,12 +378,7 @@ const Dashboard: React.FC = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            const secondsMap: Record<PomodoroProfile, number> = {
-                '25-5': 1500,
-                '50-10': 3000,
-                '90-10': 5400
-            };
-            const mappedSeconds = secondsMap[data.pomodoroProfile] || 1500;
+            const mappedSeconds = POMODORO_CONFIG[data.pomodoroProfile]?.focus || 1500;
 
             const { data: row, error } = await supabase
                 .from('todos')
@@ -480,12 +487,7 @@ const Dashboard: React.FC = () => {
         const task = tasks.find(t => t.id === id);
         if (!task || task.completed) return;
         setActiveTaskId(id);
-        const secondsMap: Record<PomodoroProfile, number> = {
-            '25-5': 1500,
-            '50-10': 3000,
-            '90-10': 5400
-        };
-        setSeconds(secondsMap[task.pomodoroProfile] || 1500);
+        setSeconds(POMODORO_CONFIG[task.pomodoroProfile]?.focus || 1500);
         setTimerStatus('running');
         setCurrentView('timer');
     };
@@ -500,12 +502,7 @@ const Dashboard: React.FC = () => {
         const task = tasks.find(t => t.id === activeTaskId);
         if (!task) return;
 
-        const secondsMap: Record<PomodoroProfile, number> = {
-            '25-5': 1500,
-            '50-10': 3000,
-            '90-10': 5400
-        };
-        const taskTotalSeconds = secondsMap[task.pomodoroProfile] || 1500;
+        const taskTotalSeconds = POMODORO_CONFIG[task.pomodoroProfile]?.focus || 1500;
         const elapsed = taskTotalSeconds - seconds;
         const newTotalTime = (task.timeSpent || 0) + elapsed;
         const newPomodorosCompleted = (task.pomodorosCompleted || 0) + 1;
@@ -528,13 +525,7 @@ const Dashboard: React.FC = () => {
             setBreakActivity(null);
             setAutoContinueTaskId(isFullyCompleted ? null : task.id);
 
-            // Break map from pomodoro profile
-            const breakMap: Record<PomodoroProfile, number> = {
-                '25-5': 300,  // 5 mins
-                '50-10': 600, // 10 mins
-                '90-10': 600, // 10 mins
-            };
-            setBreakSeconds(breakMap[task.pomodoroProfile] || 300);
+            setBreakSeconds(POMODORO_CONFIG[task.pomodoroProfile]?.break || 300);
             setCurrentView('guided-break');
         } else {
             setCurrentView('dashboard');
@@ -561,12 +552,7 @@ const Dashboard: React.FC = () => {
         recurrenceDays?: number[];
     }) => {
         try {
-            const secondsMap: Record<PomodoroProfile, number> = {
-                '25-5': 1500,
-                '50-10': 3000,
-                '90-10': 5400
-            };
-            const mappedSeconds = secondsMap[data.pomodoroProfile] || 1500;
+            const mappedSeconds = POMODORO_CONFIG[data.pomodoroProfile]?.focus || 1500;
 
             const { error } = await supabase.from('todos').update({
                 task: data.title,
@@ -613,12 +599,7 @@ const Dashboard: React.FC = () => {
         const isMarkingComplete = !task.completed;
         
         if (isMarkingComplete) {
-            const secondsMap: Record<PomodoroProfile, number> = {
-                '25-5': 1500,
-                '50-10': 3000,
-                '90-10': 5400
-            };
-            const taskTotalSeconds = secondsMap[task.pomodoroProfile] || 1500;
+            const taskTotalSeconds = POMODORO_CONFIG[task.pomodoroProfile]?.focus || 1500;
             const requiredSeconds = taskTotalSeconds * (task.pomodorosRequired || 1);
             const missingSeconds = requiredSeconds - (task.timeSpent || 0);
 
@@ -634,9 +615,9 @@ const Dashboard: React.FC = () => {
                 await updateTaskStatus(id, true);
             }
         } else {
-            // Unchecking — just toggle status
-            setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: false } : t));
-            await updateTaskStatus(id, false);
+            // Unchecking — reset progress to allow re-doing sets
+            setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: false, pomodorosCompleted: 0, timeSpent: 0 } : t));
+            await updateTaskStatus(id, false, 0, 0);
         }
 
         if (activeTaskId === id) {
@@ -652,12 +633,7 @@ const Dashboard: React.FC = () => {
         if (!task) return;
         setTimerStatus('idle');
 
-        const secondsMap: Record<PomodoroProfile, number> = {
-            '25-5': 1500,
-            '50-10': 3000,
-            '90-10': 5400
-        };
-        setSeconds(secondsMap[task.pomodoroProfile] || 1500);
+        setSeconds(POMODORO_CONFIG[task.pomodoroProfile]?.focus || 1500);
 
     };
 
@@ -685,12 +661,8 @@ const Dashboard: React.FC = () => {
                 if (activeTaskId) {
                     const task = tasks.find(t => t.id === activeTaskId);
                     if (task) {
-                        const secondsMap: Record<PomodoroProfile, number> = {
-                            '25-5': 1500,
-                            '50-10': 3000,
-                            '90-10': 5400
-                        };
-                        const taskTotalSeconds = secondsMap[task.pomodoroProfile] || 1500;
+                        const config = POMODORO_CONFIG[task.pomodoroProfile] || POMODORO_CONFIG['25-5'];
+                        const taskTotalSeconds = config.focus;
                         const newTotalTime = (task.timeSpent || 0) + taskTotalSeconds;
                         const newPomodorosCompleted = (task.pomodorosCompleted || 0) + 1;
                         const isFullyCompleted = newPomodorosCompleted >= (task.pomodorosRequired || 1);
@@ -707,13 +679,7 @@ const Dashboard: React.FC = () => {
                         setBreakActivity(null);
                         setAutoContinueTaskId(isFullyCompleted ? null : task.id);
 
-                        // Break map from pomodoro profile
-                        const breakMap: Record<PomodoroProfile, number> = {
-                            '25-5': 300,  // 5 mins
-                            '50-10': 600, // 10 mins
-                            '90-10': 600, // 10 mins
-                        };
-                        setBreakSeconds(breakMap[task.pomodoroProfile] || 300);
+                        setBreakSeconds(config.break);
                         setCurrentView('guided-break');
                     }
                     setActiveTaskId(null);
