@@ -24,14 +24,36 @@ const getProfileFromSeconds = (seconds: number): PomodoroProfile => {
     return '25-5';
 };
 
+const STORAGE_KEY = 'flowlock_persistent_state';
+
 const Dashboard: React.FC = () => {
+    // Hydrate state from localStorage
+    const savedState = (() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+            return {};
+        }
+    })();
+
     const [tasks, setTasks] = useState<Task[]>([]);
     const [folders, setFolders] = useState<Folder[]>([]);
-    const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
-    const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-    const [timerStatus, setTimerStatus] = useState<TimerStatus>('idle');
-    const [seconds, setSeconds] = useState(0);
-    const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+    const [activeFolderId, setActiveFolderId] = useState<string | null>(savedState.activeFolderId || null);
+    const [activeTaskId, setActiveTaskId] = useState<string | null>(savedState.activeTaskId || null);
+
+    // Timer hydration logic
+    const initialTimerStatus = savedState.timerStatus || 'idle';
+    let initialSeconds = savedState.seconds || 0;
+    if (initialTimerStatus === 'running' && savedState.endTime) {
+        initialSeconds = Math.max(0, Math.ceil((savedState.endTime - Date.now()) / 1000));
+    }
+
+    const [timerStatus, setTimerStatus] = useState<TimerStatus>(
+        initialTimerStatus === 'running' && initialSeconds <= 0 ? 'idle' : initialTimerStatus
+    );
+    const [seconds, setSeconds] = useState(initialSeconds);
+    const [currentView, setCurrentView] = useState<ViewType>(savedState.currentView || 'dashboard');
     const [loading, setLoading] = useState(true);
     const [goals, setGoals] = useState<GoalData>({ year: '', month: '', week: '', yearImage: undefined, monthImage: undefined, weekImage: undefined });
     const [showMobileGoals, setShowMobileGoals] = useState(false);
@@ -39,16 +61,24 @@ const Dashboard: React.FC = () => {
     const [saving, setSaving] = useState(false);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const endTimeRef = useRef<number>(0);
+    const endTimeRef = useRef<number>(savedState.endTime || 0);
     const rafRef = useRef<number | null>(null);
     const audioCtx = useRef<AudioContext | null>(null);
 
-    // Guided break state
-    const [breakPhase, setBreakPhase] = useState<BreakPhase>('victory');
-    const [breakActivity, setBreakActivity] = useState<BreakActivity | null>(null);
-    const [breakSeconds, setBreakSeconds] = useState(300); // 5 minutes
-    const [completedTaskName, setCompletedTaskName] = useState('');
-    const [autoContinueTaskId, setAutoContinueTaskId] = useState<string | null>(null);
+    // Guided break state hydration
+    const initialBreakPhase = savedState.breakPhase || 'victory';
+    let initialBreakSeconds = savedState.breakSeconds || 300;
+    if (initialBreakPhase === 'active' && savedState.breakEndTime) {
+        initialBreakSeconds = Math.max(0, Math.round((savedState.breakEndTime - Date.now()) / 1000));
+    }
+
+    const [breakPhase, setBreakPhase] = useState<BreakPhase>(initialBreakPhase);
+    const [breakActivity, setBreakActivity] = useState<BreakActivity | null>(savedState.breakActivity || null);
+    const [breakSeconds, setBreakSeconds] = useState(initialBreakSeconds);
+    const [completedTaskName, setCompletedTaskName] = useState(savedState.completedTaskName || '');
+    const [autoContinueTaskId, setAutoContinueTaskId] = useState<string | null>(savedState.autoContinueTaskId || null);
+    const breakTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const breakEndTimeRef = useRef<number>(savedState.breakEndTime || 0);
 
     // Fetch initial data
     useEffect(() => {
@@ -56,6 +86,25 @@ const Dashboard: React.FC = () => {
         fetchFolders();
         fetchGoals();
     }, []);
+
+    // Persist state to localStorage
+    useEffect(() => {
+        const stateToSave = {
+            activeFolderId,
+            activeTaskId,
+            timerStatus,
+            seconds,
+            endTime: endTimeRef.current,
+            currentView,
+            breakPhase,
+            breakActivity,
+            breakSeconds,
+            breakEndTime: breakEndTimeRef.current,
+            completedTaskName,
+            autoContinueTaskId
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    }, [activeFolderId, activeTaskId, timerStatus, seconds, currentView, breakPhase, breakActivity, breakSeconds, completedTaskName, autoContinueTaskId]);
 
     // Handle daily reset at midnight
     useEffect(() => {
@@ -655,6 +704,7 @@ const Dashboard: React.FC = () => {
             endTimeRef.current = Date.now() + seconds * 1000;
 
             const onTimerFinished = () => {
+                if (loading) return; // Wait for tasks to be ready
                 playNotification();
                 setTimerStatus('idle');
                 setSeconds(0);
@@ -722,10 +772,8 @@ const Dashboard: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [timerStatus, activeTaskId, tasks]);
 
-    // ── Break countdown timer ──────────────────────────────
-    const breakTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const breakEndTimeRef = useRef<number>(0);
 
+    // ── Break countdown timer ──────────────────────────────
     useEffect(() => {
         if (currentView === 'guided-break' && breakPhase === 'active') {
             breakEndTimeRef.current = Date.now() + breakSeconds * 1000 + 100;
@@ -765,7 +813,8 @@ const Dashboard: React.FC = () => {
         const msUntilMidnight = midnight.getTime() - now.getTime();
 
         const timer = setTimeout(() => {
-            // Clear local state immediately
+            // Clear local state and persistence immediately
+            localStorage.removeItem(STORAGE_KEY);
             setTasks([]);
             setActiveTaskId(null);
             setTimerStatus('idle');
