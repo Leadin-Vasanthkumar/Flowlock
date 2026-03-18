@@ -64,10 +64,11 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
         e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
     };
 
-    const profiles: { value: PomodoroProfile; label: string }[] = [
-        { value: '25-5', label: '25' },
-        { value: '50-10', label: '50' },
-        { value: '90-10', label: '90' },
+    const profiles: { value: PomodoroProfile; label: string; subLabel: string }[] = [
+        { value: '25-5', label: '25', subLabel: 'MINS' },
+        { value: '50-10', label: '50', subLabel: 'MINS' },
+        { value: '90-10', label: '90', subLabel: 'MINS' },
+        { value: 'no-timer', label: '—', subLabel: 'NO TIMER' },
     ];
 
     const weekDays = [
@@ -147,9 +148,9 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
 
             {/* Pomodoro Range & Sets */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="sm:col-span-3">
+                <div className={pomodoroProfile === 'no-timer' ? 'sm:col-span-4' : 'sm:col-span-3'}>
                     <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Pomodoro range</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className={`grid gap-2 ${pomodoroProfile === 'no-timer' ? 'grid-cols-4' : 'grid-cols-3'}`}>
                         {profiles.map((p) => {
                             const isSelected = pomodoroProfile === p.value;
                             return (
@@ -166,7 +167,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
                                         {p.label}
                                     </span>
                                     <span className={`text-[8px] tracking-widest font-bold ${isSelected ? 'text-[#22C55E]' : 'text-slate-600'}`}>
-                                        MINS
+                                        {p.subLabel}
                                     </span>
                                 </button>
                             );
@@ -174,6 +175,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
                     </div>
                 </div>
 
+                {pomodoroProfile !== 'no-timer' && (
                 <div className="sm:col-span-1">
                     <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Sets</label>
                     <div className="flex items-center justify-between px-2 h-[62px] rounded-xl border border-white/5 bg-white/5">
@@ -203,6 +205,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSave, onCancel, sav
                         </button>
                     </div>
                 </div>
+                )}
             </div>
 
             {/* Actions */}

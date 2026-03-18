@@ -63,10 +63,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }
         e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
     };
 
-    const profiles: { value: PomodoroProfile; label: string }[] = [
-        { value: '25-5', label: '25' },
-        { value: '50-10', label: '50' },
-        { value: '90-10', label: '90' },
+    const profiles: { value: PomodoroProfile; label: string; subLabel: string }[] = [
+        { value: '25-5', label: '25', subLabel: 'MINS' },
+        { value: '50-10', label: '50', subLabel: 'MINS' },
+        { value: '90-10', label: '90', subLabel: 'MINS' },
+        { value: 'no-timer', label: '—', subLabel: 'NO TIMER' },
     ];
 
     const weekDays = [
@@ -148,11 +149,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }
 
             {/* Pomodoro Range & Sets */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-                <div className="sm:col-span-3">
+                <div className={pomodoroProfile === 'no-timer' ? 'sm:col-span-4' : 'sm:col-span-3'}>
                     <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2.5 ml-1">
                         Pomodoro range
                     </label>
-                    <div className="grid grid-cols-3 gap-3 w-full">
+                    <div className={`grid gap-3 w-full ${pomodoroProfile === 'no-timer' ? 'grid-cols-4' : 'grid-cols-3'}`}>
                         {profiles.map((p) => {
                             const isSelected = pomodoroProfile === p.value;
                             return (
@@ -172,7 +173,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }
                                         {p.label}
                                     </span>
                                     <span className={`text-[9px] uppercase tracking-widest font-bold ${isSelected ? 'text-[#22C55E]' : 'text-slate-600'}`}>
-                                        MINS
+                                        {p.subLabel}
                                     </span>
                                 </button>
                             );
@@ -180,6 +181,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }
                     </div>
                 </div>
 
+                {pomodoroProfile !== 'no-timer' && (
                 <div className="sm:col-span-1">
                     <label className="block text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2.5 ml-1 text-center sm:text-left">
                         Sets
@@ -211,6 +213,7 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit, onCancel, loading }
                         </button>
                     </div>
                 </div>
+                )}
             </div>
 
             {/* Actions */}

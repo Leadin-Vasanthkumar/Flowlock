@@ -11,6 +11,8 @@ import {
     CartesianGrid, 
     Tooltip, 
     ResponsiveContainer,
+    Area,
+    ComposedChart,
     Legend
 } from 'recharts';
 import { 
@@ -213,23 +215,50 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                         <p className="text-[10px] font-bold text-[#22C55E] uppercase tracking-widest font-black">Streak</p>
                                         <p className="text-2xl font-black text-white">
                                             {(() => {
-                                                const uniqueDates = Array.from(new Set(completionHistory.map(c => c.completed_date))).sort((a, b) => b.localeCompare(a));
-                                                if (uniqueDates.length === 0) return "0 Days";
+                                                const habitFolders = folders.filter(f => f.isHabit);
+                                                if (habitFolders.length === 0) return "0 Days";
+
+                                                // Group completions by date (only counting habit completions)
+                                                const dailyHabitCompletions: Record<string, Set<string>> = {};
+                                                completionHistory.forEach(c => {
+                                                    if (habitFolders.some(h => h.id === c.folder_id)) {
+                                                        if (!dailyHabitCompletions[c.completed_date]) {
+                                                            dailyHabitCompletions[c.completed_date] = new Set();
+                                                        }
+                                                        dailyHabitCompletions[c.completed_date].add(c.folder_id);
+                                                    }
+                                                });
+
+                                                // Identify dates where ALL habits were completed
+                                                const perfectDates = Object.keys(dailyHabitCompletions).filter(date => 
+                                                    dailyHabitCompletions[date].size >= habitFolders.length
+                                                ).sort((a, b) => b.localeCompare(a));
+
+                                                if (perfectDates.length === 0) return "0 Days";
+
                                                 const todayStr = new Date().toLocaleDateString('en-CA');
                                                 const yesterday = new Date();
                                                 yesterday.setDate(yesterday.getDate() - 1);
                                                 const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+                                                // Streak is active if either today or yesterday was a perfect day
+                                                const isTodayPerfect = perfectDates.includes(todayStr);
+                                                const isYesterdayPerfect = perfectDates.includes(yesterdayStr);
+
+                                                if (!isTodayPerfect && !isYesterdayPerfect) return "0 Days";
+
                                                 let currentStreak = 0;
-                                                let checkDate = uniqueDates.includes(todayStr) ? todayStr : uniqueDates.includes(yesterdayStr) ? yesterdayStr : null;
-                                                if (!checkDate) return "0 Days";
-                                                let currentDate = new Date(checkDate);
+                                                let checkDateStr = isTodayPerfect ? todayStr : yesterdayStr;
+                                                let currentDate = new Date(checkDateStr);
+
                                                 while (true) {
                                                     const dateStr = currentDate.toISOString().split('T')[0];
-                                                    if (uniqueDates.includes(dateStr)) {
+                                                    if (perfectDates.includes(dateStr)) {
                                                         currentStreak++;
                                                         currentDate.setDate(currentDate.getDate() - 1);
                                                     } else break;
                                                 }
+
                                                 return `${currentStreak} Day${currentStreak === 1 ? '' : 's'}`;
                                             })()}
                                         </p>
@@ -339,8 +368,8 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                         <section className="bg-white/[0.02] border border-white/[0.05] rounded-[32px] p-8 md:p-10 backdrop-blur-xl group">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                                 <div>
-                                    <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.2em] mb-1">Consistency Flow</h2>
-                                    <p className="text-[10px] text-white/20 font-bold tracking-widest uppercase">Multi-Habit Performance</p>
+                                    <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.2em] mb-1">Momentum Flow</h2>
+                                    <p className="text-[10px] text-white/20 font-bold tracking-widest uppercase">Cumulative Consistency Progress</p>
                                 </div>
 
                                 {(() => {
@@ -381,32 +410,48 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                     const monthStart = startOfMonth(selectedMonth);
                                     const monthEnd = endOfMonth(selectedMonth);
                                     const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-                                    
                                     const habitFolders = folders.filter(f => f.isHabit);
                                     
+                                    // Calculate cumulative momentum
+                                    let momentum = 0;
                                     const chartData = days.map(day => {
                                         const dateStr = format(day, 'yyyy-MM-dd');
-                                        const dayData: any = { 
+                                        const completionsOnDay = completionHistory.filter(c => 
+                                            c.completed_date === dateStr && 
+                                            habitFolders.some(h => h.id === c.folder_id)
+                                        ).length;
+                                        
+                                        const totalHabits = Math.max(habitFolders.length, 1);
+                                        const ratio = completionsOnDay / totalHabits;
+                                        const isFuture = day > new Date();
+
+                                        if (!isFuture) {
+                                            if (ratio === 1) {
+                                                momentum += 1;
+                                            } else if (ratio === 0) {
+                                                momentum = Math.max(0, momentum * 0.15); // Really really low drop
+                                            } else {
+                                                momentum = Math.max(0, momentum + (ratio * 2 - 1) * 0.5);
+                                            }
+                                        }
+
+                                        return {
                                             name: format(day, 'd'),
-                                            fullDate: format(day, 'MMM d')
+                                            fullDate: format(day, 'MMM d'),
+                                            momentum: isFuture ? null : parseFloat(momentum.toFixed(2)),
+                                            ratio: ratio
                                         };
-                                        
-                                        habitFolders.forEach((habit, index) => {
-                                            const isDone = completionHistory.some(c => 
-                                                c.folder_id === habit.id && c.completed_date === dateStr
-                                            );
-                                            // Vertical stacking: Each habit gets its own lane (offset by index * 2)
-                                            // Increased offset to 2 for a larger safety gap between curved lines
-                                            const offset = index * 2;
-                                            dayData[habit.name] = isDone ? (offset + 0.8) : offset;
-                                        });
-                                        
-                                        return dayData;
                                     });
 
                                     return (
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                            <ComposedChart data={chartData} margin={{ top: 20, right: 5, left: -20, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="momentumGradient" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
                                                 <XAxis 
                                                     dataKey="name" 
@@ -417,55 +462,50 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                                 />
                                                 <YAxis 
                                                     hide={true} 
-                                                    domain={[0, Math.max(habitFolders.length * 2, 2)]}
+                                                    domain={[0, 'auto']}
                                                 />
                                                 <Tooltip 
                                                     contentStyle={{ 
-                                                        backgroundColor: 'rgba(13, 14, 13, 0.9)', 
+                                                        backgroundColor: 'rgba(13, 14, 13, 0.95)', 
                                                         border: '1px solid rgba(255,255,255,0.1)',
                                                         borderRadius: '16px',
-                                                        backdropFilter: 'blur(10px)',
-                                                        padding: '12px'
+                                                        backdropFilter: 'blur(20px)',
+                                                        padding: '16px',
+                                                        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)'
                                                     }}
-                                                    itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                                                    cursor={{ stroke: 'rgba(22, 197, 94, 0.2)', strokeWidth: 2 }}
+                                                    itemStyle={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', color: '#22C55E' }}
                                                     labelStyle={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}
-                                                    formatter={(value: number, name: string) => {
-                                                        const index = habitFolders.findIndex(h => h.name === name);
-                                                        const offset = index * 2;
-                                                        const isDone = value > offset + 0.4;
-                                                        return [isDone ? 'COMPLETED' : '—', name];
-                                                    }}
+                                                    formatter={(value: any) => [`${value}`, 'MOMENTUM']}
                                                     labelFormatter={(label, payload) => payload[0]?.payload.fullDate || label}
                                                 />
-                                                <Legend 
-                                                    verticalAlign="top" 
-                                                    align="right"
-                                                    iconType="circle"
-                                                    content={({ payload }) => (
-                                                        <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 mb-6">
-                                                            {payload?.map((entry: any, index: number) => (
-                                                                <div key={`item-${index}`} className="flex items-center gap-1.5">
-                                                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                                                                    <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">{entry.value}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                <Area 
+                                                    type="monotone" 
+                                                    dataKey="momentum" 
+                                                    stroke="none" 
+                                                    fill="url(#momentumGradient)" 
+                                                    fillOpacity={1}
+                                                    animationDuration={2000}
+                                                    connectNulls
+                                                    tooltipType="none"
                                                 />
-                                                {habitFolders.map((habit, index) => (
-                                                    <Line
-                                                        key={habit.id}
-                                                        type="monotone" // Switched back to smooth line graph
-                                                        dataKey={habit.name}
-                                                        stroke={habitColors[index % habitColors.length]}
-                                                        strokeWidth={3}
-                                                        dot={false}
-                                                        activeDot={{ r: 4, strokeWidth: 0, fill: habitColors[index % habitColors.length] }}
-                                                        animationDuration={1500}
-                                                        connectNulls
-                                                    />
-                                                ))}
-                                            </LineChart>
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="momentum"
+                                                    stroke="#22C55E"
+                                                    strokeWidth={4}
+                                                    dot={false}
+                                                    activeDot={{ 
+                                                        r: 6, 
+                                                        strokeWidth: 0, 
+                                                        fill: '#22C55E',
+                                                        style: { filter: 'drop-shadow(0 0 10px rgba(34,197,94,0.8))' }
+                                                    }}
+                                                    animationDuration={2000}
+                                                    style={{ filter: 'drop-shadow(0 0 12px rgba(34,197,94,0.4))' }}
+                                                    connectNulls
+                                                />
+                                            </ComposedChart>
                                         </ResponsiveContainer>
                                     );
                                 })()}
@@ -508,9 +548,8 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                                 <div className="absolute left-[-3.5rem] top-0 text-[10px] font-black text-white/20 tracking-widest tabular-nums">
                                                     {timeStr}
                                                 </div>
-                                                <div className={`absolute left-[-0.35rem] top-[6px] w-3 h-3 rounded-full border-2 transition-all duration-500 z-30 ${
-                                                    startingFolders.length > 0 ? 'bg-[#22C55E] border-[#0D0E0D] scale-100 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-[#0D0E0D] border-white/10 scale-50'
-                                                }`} />
+                                                {/* Dot removed as per user request */}
+
 
                                                 <div className="ml-6 relative h-full">
                                                     {actuallyStartingFolders.flatMap(folder => {
@@ -536,11 +575,12 @@ const AnalysisPage: React.FC<AnalysisPageProps> = ({ tasks, folders, currentView
                                                                         marginTop: '6px'
                                                                     }}
                                                                 >
-                                                                    <div className="flex flex-col gap-1 overflow-hidden">
+                                                                    <div className="flex items-center justify-start gap-3 overflow-hidden">
                                                                         <span className="text-xs font-black text-white tracking-tight uppercase truncate">{folder.name}</span>
-                                                                        <div className="flex items-center gap-2 text-[10px] text-white/40 font-bold">
-                                                                            <span className="tabular-nums">{block.startTime.slice(0, 5)} - {block.endTime.slice(0, 5)}</span>
-                                                                        </div>
+                                                                        <span className="text-white/20 text-[10px] uppercase font-black tracking-widest shrink-0">•</span>
+                                                                        <span className="text-[10px] text-white/40 font-bold tabular-nums shrink-0">
+                                                                            {block.startTime.slice(0, 5)} - {block.endTime.slice(0, 5)}
+                                                                        </span>
                                                                     </div>
                                                                 </motion.div>
                                                             );

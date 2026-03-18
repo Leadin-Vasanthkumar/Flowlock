@@ -1,7 +1,7 @@
 # Analysis Page Overrides
 
 > **PROJECT:** Flowlock
-> **Generated:** 2026-03-03 06:05:11
+> **Generated:** 2026-03-18 14:40:04
 > **Page Type:** Dashboard / Data View
 
 > ⚠️ **IMPORTANT:** Rules in this file **override** the Master file (`design-system/MASTER.md`).
@@ -15,7 +15,7 @@
 
 - **Max Width:** 1200px (standard)
 - **Layout:** Full-width sections, centered content
-- **Sections:** 1. Intro (Vertical), 2. The Journey (Horizontal Track), 3. Detail Reveal, 4. Vertical Footer
+- **Sections:** 1. Hero (Topic + Timer + Form), 2. What you'll learn, 3. Speaker Bio, 4. Urgency/Bonuses, 5. Form (again)
 
 ### Spacing Overrides
 
@@ -27,12 +27,11 @@
 
 ### Color Overrides
 
-- **Strategy:** Continuous palette transition. Chapter colors. Progress bar #000000.
+- **Strategy:** Urgency: Red/Orange. Professional: Blue/Navy. Form: High contrast white.
 
 ### Component Overrides
 
-- Avoid: Single row actions only
-- Avoid: Auto-play high-res video loops
+- Avoid: No indication of progress
 
 ---
 
@@ -44,7 +43,6 @@
 
 ## Recommendations
 
-- Effects: Funnel animation (fill-down), flow diagram animations (connection draw), conversion pulse, engagement bar fill
-- Data Entry: Allow multi-select and bulk edit
-- Sustainability: Click-to-play or pause when off-screen
-- CTA Placement: Floating Sticky CTA or End of Horizontal Track
+- Effects: Comparison bar animations (grow to value), delta indicator animations (direction arrows), highlight on compare
+- Feedback: Step indicators or progress bar
+- CTA Placement: Hero (Right side form) + Bottom anchor

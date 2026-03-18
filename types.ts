@@ -1,5 +1,5 @@
 
-export type PomodoroProfile = '25-5' | '50-10' | '90-10';
+export type PomodoroProfile = '25-5' | '50-10' | '90-10' | 'no-timer';
 
 export interface TimeBlock {
   startTime: string;

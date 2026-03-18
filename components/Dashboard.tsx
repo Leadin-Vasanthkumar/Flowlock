@@ -5,6 +5,7 @@ import ResizableLayout from './ResizableLayout';
 import TimerView from './TimerView';
 import GuidedBreak, { BreakPhase, BreakActivity } from './GuidedBreak';
 import GoalsPanel, { GoalData } from './GoalsPanel';
+import NotepadPanel from './NotepadPanel';
 import AnalysisPage from './AnalysisPage';
 import UserProfileMenu from './UserProfileMenu';
 import { Task, TimerStatus, PomodoroProfile, Folder, RecurrenceType, TimeBlock } from '../types';
@@ -16,9 +17,11 @@ const POMODORO_CONFIG: Record<PomodoroProfile, { focus: number; break: number }>
     '25-5': { focus: 1500, break: 300 },
     '50-10': { focus: 3000, break: 600 },
     '90-10': { focus: 5400, break: 600 },
+    'no-timer': { focus: 0, break: 0 },
 };
 
 const getProfileFromSeconds = (seconds: number): PomodoroProfile => {
+    if (seconds === 0) return 'no-timer';
     if (seconds === 5400) return '90-10';
     if (seconds === 3000) return '50-10';
     return '25-5';
@@ -427,7 +430,7 @@ const Dashboard: React.FC = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
 
-            const mappedSeconds = POMODORO_CONFIG[data.pomodoroProfile]?.focus || 1500;
+            const mappedSeconds = POMODORO_CONFIG[data.pomodoroProfile]?.focus ?? 1500;
 
             const { data: row, error } = await supabase
                 .from('todos')
@@ -506,7 +509,25 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    // Auto-complete folder when all its tasks are done
+    const checkFolderAutoCompletion = async (folderId: string | undefined, updatedTasks: Task[]) => {
+        if (!folderId) return;
+        const folder = folders.find(f => f.id === folderId);
+        if (!folder) return;
 
+        const folderTasks = updatedTasks.filter(t => t.folderId === folderId);
+        if (folderTasks.length === 0) return;
+
+        const allCompleted = folderTasks.every(t => t.completed);
+
+        if (allCompleted && !folder.isCompletedToday) {
+            // All tasks done, auto-tick the folder
+            await handleToggleFolderCompletion(folderId);
+        } else if (!allCompleted && folder.isCompletedToday) {
+            // A task was unchecked, auto-untick the folder
+            await handleToggleFolderCompletion(folderId);
+        }
+    };
 
     // Notification sound
     const playNotification = () => {
@@ -534,7 +555,7 @@ const Dashboard: React.FC = () => {
     // Play a task — start countdown
     const handlePlayTask = (id: string) => {
         const task = tasks.find(t => t.id === id);
-        if (!task || task.completed) return;
+        if (!task || task.completed || task.pomodoroProfile === 'no-timer') return;
         setActiveTaskId(id);
         setSeconds(POMODORO_CONFIG[task.pomodoroProfile]?.focus || 1500);
         setTimerStatus('running');
@@ -557,12 +578,18 @@ const Dashboard: React.FC = () => {
         const newPomodorosCompleted = (task.pomodorosCompleted || 0) + 1;
         const isFullyCompleted = newPomodorosCompleted >= (task.pomodorosRequired || 1);
 
-        setTasks(prev => prev.map(t =>
+        const updatedTasks = tasks.map(t =>
             t.id === activeTaskId ? { ...t, completed: isFullyCompleted, timeSpent: newTotalTime, pomodorosCompleted: newPomodorosCompleted } : t
-        ));
+        );
+        setTasks(updatedTasks);
 
         await updateTaskStatus(activeTaskId, isFullyCompleted, newTotalTime, newPomodorosCompleted);
         await logFocusSession(elapsed);
+
+        // Auto-complete folder if all tasks are done
+        if (isFullyCompleted && task.folderId) {
+            await checkFolderAutoCompletion(task.folderId, updatedTasks);
+        }
 
         setTimerStatus('idle');
         setSeconds(0);
@@ -601,7 +628,7 @@ const Dashboard: React.FC = () => {
         recurrenceDays?: number[];
     }) => {
         try {
-            const mappedSeconds = POMODORO_CONFIG[data.pomodoroProfile]?.focus || 1500;
+            const mappedSeconds = POMODORO_CONFIG[data.pomodoroProfile]?.focus ?? 1500;
 
             const { error } = await supabase.from('todos').update({
                 task: data.title,
@@ -646,6 +673,7 @@ const Dashboard: React.FC = () => {
         if (!task) return;
 
         const isMarkingComplete = !task.completed;
+        let updatedTasks: Task[];
         
         if (isMarkingComplete) {
             const taskTotalSeconds = POMODORO_CONFIG[task.pomodoroProfile]?.focus || 1500;
@@ -653,21 +681,26 @@ const Dashboard: React.FC = () => {
             const missingSeconds = requiredSeconds - (task.timeSpent || 0);
 
             if (missingSeconds > 0) {
-                // If they forgot the timer, we credit them the full remaining time
-                setTasks(prev => prev.map(t =>
+                updatedTasks = tasks.map(t =>
                     t.id === id ? { ...t, completed: true, timeSpent: requiredSeconds, pomodorosCompleted: t.pomodorosRequired } : t
-                ));
+                );
+                setTasks(updatedTasks);
                 await updateTaskStatus(id, true, requiredSeconds, task.pomodorosRequired);
                 await logFocusSession(missingSeconds);
             } else {
-                setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: true } : t));
+                updatedTasks = tasks.map(t => t.id === id ? { ...t, completed: true } : t);
+                setTasks(updatedTasks);
                 await updateTaskStatus(id, true);
             }
         } else {
             // Unchecking — reset progress to allow re-doing sets
-            setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: false, pomodorosCompleted: 0, timeSpent: 0 } : t));
+            updatedTasks = tasks.map(t => t.id === id ? { ...t, completed: false, pomodorosCompleted: 0, timeSpent: 0 } : t);
+            setTasks(updatedTasks);
             await updateTaskStatus(id, false, 0, 0);
         }
+
+        // Auto-complete or auto-untick folder
+        await checkFolderAutoCompletion(task.folderId, updatedTasks);
 
         if (activeTaskId === id) {
             setTimerStatus('idle');
@@ -717,11 +750,17 @@ const Dashboard: React.FC = () => {
                         const newPomodorosCompleted = (task.pomodorosCompleted || 0) + 1;
                         const isFullyCompleted = newPomodorosCompleted >= (task.pomodorosRequired || 1);
 
-                        setTasks(prev => prev.map(t =>
+                        const timerUpdatedTasks = tasks.map(t =>
                             t.id === activeTaskId ? { ...t, completed: isFullyCompleted, timeSpent: newTotalTime, pomodorosCompleted: newPomodorosCompleted } : t
-                        ));
+                        );
+                        setTasks(timerUpdatedTasks);
                         updateTaskStatus(activeTaskId, isFullyCompleted, newTotalTime, newPomodorosCompleted);
                         logFocusSession(taskTotalSeconds);
+
+                        // Auto-complete folder if all tasks are done
+                        if (isFullyCompleted && task.folderId) {
+                            checkFolderAutoCompletion(task.folderId, timerUpdatedTasks);
+                        }
 
                         // Enter guided break flow
                         setCompletedTaskName(task.title);
@@ -910,11 +949,18 @@ const Dashboard: React.FC = () => {
             ) : (
                 <ResizableLayout
                     sidebarContent={
-                        <GoalsPanel 
-                            goals={goals} 
-                            onSaveGoal={handleSaveGoal} 
-                            onSaveGoalImage={handleSaveGoalImage} 
-                        />
+                        activeFolderId ? (
+                            <NotepadPanel 
+                                folderId={activeFolderId} 
+                                folderName={folders.find(f => f.id === activeFolderId)?.name || 'Folder'} 
+                            />
+                        ) : (
+                            <GoalsPanel 
+                                goals={goals} 
+                                onSaveGoal={handleSaveGoal} 
+                                onSaveGoalImage={handleSaveGoalImage} 
+                            />
+                        )
                     }
                     mobileFAB={
                         <button
@@ -943,7 +989,14 @@ const Dashboard: React.FC = () => {
                                             <line x1="6" y1="6" x2="18" y2="18" />
                                         </svg>
                                     </button>
-                                    <GoalsPanel goals={goals} onSaveGoal={handleSaveGoal} onSaveGoalImage={handleSaveGoalImage} />
+                                    {activeFolderId ? (
+                                        <NotepadPanel 
+                                            folderId={activeFolderId} 
+                                            folderName={folders.find(f => f.id === activeFolderId)?.name || 'Folder'} 
+                                        />
+                                    ) : (
+                                        <GoalsPanel goals={goals} onSaveGoal={handleSaveGoal} onSaveGoalImage={handleSaveGoalImage} />
+                                    )}
                                 </div>
                             </div>
                         )
